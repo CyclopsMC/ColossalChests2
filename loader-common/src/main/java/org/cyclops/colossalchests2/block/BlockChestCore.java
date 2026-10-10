@@ -1,5 +1,7 @@
 package org.cyclops.colossalchests2.block;
 
+import java.util.function.Consumer;
+import net.minecraft.world.level.redstone.Orientation;
 import com.google.common.collect.Lists;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.ChatFormatting;
@@ -10,13 +12,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.ItemContainerContents;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
@@ -45,7 +45,7 @@ import java.util.List;
  * Broken cores keep their contents as item data, so nothing is ever ejected into the world.
  * @author rubensworks
  */
-public class BlockChestCore extends BaseEntityBlock {
+public class BlockChestCore extends BaseEntityBlock implements ITooltipBlock {
 
     public static final BooleanProperty FORMED = IChestMember.FORMED;
 
@@ -67,14 +67,13 @@ public class BlockChestCore extends BaseEntityBlock {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
-        tooltip.add(material.getLimitsTooltip());
+    public void appendTooltip(ItemStack stack, Item.TooltipContext context, Consumer<Component> tooltip, TooltipFlag flag) {
+        tooltip.accept(material.getLimitsTooltip());
         UpgradeSet upgrades = UpgradeSet.of(stack.getOrDefault(RegistryEntries.COMPONENT_CHEST_UPGRADES.value(), ItemContainerContents.EMPTY)
-                .nonEmptyItems());
+                .nonEmptyItemCopyStream().toList());
         if (!upgrades.counts().isEmpty()) {
-            tooltip.add(Component.translatable("block.colossalchests2.chest_core.upgrades").withStyle(ChatFormatting.GRAY));
-            upgrades.counts().forEach((upgrade, count) -> tooltip.add(Component.translatable("block.colossalchests2.chest_core.upgrade",
+            tooltip.accept(Component.translatable("block.colossalchests2.chest_core.upgrades").withStyle(ChatFormatting.GRAY));
+            upgrades.counts().forEach((upgrade, count) -> tooltip.accept(Component.translatable("block.colossalchests2.chest_core.upgrade",
                     count, upgrade.getDisplayName()).withStyle(ChatFormatting.GRAY)));
         }
     }
@@ -103,7 +102,7 @@ public class BlockChestCore extends BaseEntityBlock {
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         return ChestInteractions.useItemOn(stack, state);
     }
 
@@ -113,18 +112,18 @@ public class BlockChestCore extends BaseEntityBlock {
     }
 
     @Override
-    protected VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) {
-        return IChestMember.getFormedOcclusionShape(state, super.getOcclusionShape(state, level, pos));
+    protected VoxelShape getOcclusionShape(BlockState state) {
+        return IChestMember.getFormedOcclusionShape(state, super.getOcclusionShape(state));
     }
 
     @Override
-    protected int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) {
-        return IChestMember.getFormedLightBlock(state, super.getLightBlock(state, level, pos));
+    protected int getLightDampening(BlockState state) {
+        return IChestMember.getFormedLightBlock(state, super.getLightDampening(state));
     }
 
     @Override
-    protected boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
-        return IChestMember.getFormedPropagatesSkylightDown(state, super.propagatesSkylightDown(state, level, pos));
+    protected boolean propagatesSkylightDown(BlockState state) {
+        return IChestMember.getFormedPropagatesSkylightDown(state, super.propagatesSkylightDown(state));
     }
 
     @Nullable
@@ -137,20 +136,12 @@ public class BlockChestCore extends BaseEntityBlock {
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
         return createTickerHelper(type, RegistryEntries.BLOCK_ENTITY_CHEST_CORE.value(),
-                level.isClientSide ? BlockEntityChestCore::clientTick : BlockEntityChestCore::serverTick);
+                level.isClientSide() ? BlockEntityChestCore::clientTick : BlockEntityChestCore::serverTick);
     }
 
     @Override
-    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-        if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof BlockEntityChestCore core) {
-            core.dissolve();
-        }
-        super.onRemove(state, level, pos, newState, movedByPiston);
-    }
-
-    @Override
-    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, BlockPos neighborPos, boolean movedByPiston) {
-        super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, @Nullable Orientation orientation, boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, neighborBlock, orientation, movedByPiston);
         if (level.getBlockEntity(pos) instanceof BlockEntityChestCore core) {
             core.requestValidation();
         }
@@ -159,7 +150,7 @@ public class BlockChestCore extends BaseEntityBlock {
     @Override
     public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         // Creative mode skips drops, but a core with contents or upgrades must never vanish.
-        if (!level.isClientSide && player.isCreative() && level.getBlockEntity(pos) instanceof BlockEntityChestCore core
+        if (!level.isClientSide() && player.isCreative() && level.getBlockEntity(pos) instanceof BlockEntityChestCore core
                 && (!core.getStorage().toContents().entries().isEmpty() || !core.getUpgrades().isEmpty())) {
             ItemStack stack = new ItemStack(this);
             stack.applyComponents(core.collectComponents());
@@ -187,7 +178,7 @@ public class BlockChestCore extends BaseEntityBlock {
      */
     public static Direction getFaceTowards(BlockPos pos, Player player) {
         Vec3 offset = player.getEyePosition().subtract(Vec3.atCenterOf(pos));
-        return Direction.getNearest(offset.x, offset.y, offset.z);
+        return Direction.getApproximateNearest(offset.x, offset.y, offset.z);
     }
 
     @Override
@@ -196,7 +187,7 @@ public class BlockChestCore extends BaseEntityBlock {
     }
 
     @Override
-    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
         return level.getBlockEntity(pos) instanceof BlockEntityChestCore core ? core.getComparatorSignal() : 0;
     }
 }

@@ -2,6 +2,7 @@ package org.cyclops.colossalchests2.storage;
 
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.item.component.ItemContainerContents;
@@ -34,7 +35,7 @@ public class TestNestedChests extends BootstrapTest {
     public void testContainers() {
         assertTrue(NestedChests.canStore(shulkerWith(new ItemStack(Items.STONE, 64))));
         ItemStack bundle = new ItemStack(Items.BUNDLE);
-        bundle.set(DataComponents.BUNDLE_CONTENTS, new BundleContents(List.of(shulkerWith(new ItemStack(Items.STONE)))));
+        bundle.set(DataComponents.BUNDLE_CONTENTS, new BundleContents(List.of(ItemStackTemplate.fromNonEmptyStack(shulkerWith(new ItemStack(Items.STONE))))));
         assertTrue(NestedChests.canStore(bundle));
     }
 

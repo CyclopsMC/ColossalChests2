@@ -2,8 +2,9 @@ package org.cyclops.colossalchests2.gametest;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.gametest.framework.GameTest;
+import org.cyclops.cyclopscore.gametest.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.ItemStack;
@@ -11,7 +12,6 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.wrapper.InvWrapper;
@@ -28,7 +28,6 @@ import org.cyclops.colossalchests2.storage.ChestStorage;
  * Item handler adapter tests through Forge's own transfer helpers.
  * @author rubensworks
  */
-@GameTestHolder(Reference.MOD_ID)
 public class GameTestsCapabilitiesForge {
 
     public static final String TEMPLATE_EMPTY = Reference.MOD_ID + ":empty10";
@@ -106,13 +105,13 @@ public class GameTestsCapabilitiesForge {
         helper.startSequence()
                 .thenWaitUntil(() -> GameTestsCommon.assertFormed(helper, corePos, min, 3))
                 .thenExecute(() -> {
-                    IItemHandler handler = helper.getBlockEntity(corePos).getCapability(ForgeCapabilities.ITEM_HANDLER, Direction.NORTH).orElse(null);
+                    IItemHandler handler = helper.getBlockEntity(corePos, BlockEntity.class).getCapability(ForgeCapabilities.ITEM_HANDLER, Direction.NORTH).orElse(null);
                     helper.assertTrue(handler != null, "Expected an item handler on a formed core");
                     helper.assertTrue(handler.insertItem(0, new ItemStack(Items.STONE, 10), false).isEmpty(), "Expected the core to accept items");
                     helper.setBlock(min.offset(0, 1, 1), Blocks.AIR);
                 })
                 .thenWaitUntil(() -> GameTestsCommon.assertDormant(helper, corePos))
-                .thenExecute(() -> helper.assertFalse(helper.getBlockEntity(corePos).getCapability(ForgeCapabilities.ITEM_HANDLER, Direction.NORTH).isPresent(), "Expected no item handler on a dormant core"))
+                .thenExecute(() -> helper.assertFalse(helper.getBlockEntity(corePos, BlockEntity.class).getCapability(ForgeCapabilities.ITEM_HANDLER, Direction.NORTH).isPresent(), "Expected no item handler on a dormant core"))
                 .thenSucceed();
     }
 
@@ -125,7 +124,7 @@ public class GameTestsCapabilitiesForge {
         helper.startSequence()
                 .thenWaitUntil(() -> GameTestsCommon.assertFormed(helper, corePos, min, 3))
                 .thenExecute(() -> {
-                    first[0] = helper.getBlockEntity(wallPos).getCapability(ForgeCapabilities.ITEM_HANDLER, Direction.UP);
+                    first[0] = helper.getBlockEntity(wallPos, BlockEntity.class).getCapability(ForgeCapabilities.ITEM_HANDLER, Direction.UP);
                     IItemHandler handler = first[0].orElse(null);
                     helper.assertTrue(handler != null, "Expected an item handler on a formed interface");
                     helper.assertTrue(handler.insertItem(0, new ItemStack(Items.STONE, 10), false).isEmpty(), "Expected the interface to accept items");
@@ -136,7 +135,7 @@ public class GameTestsCapabilitiesForge {
                 .thenExecute(() -> {
                     // Holders of the old handler learn that it is gone.
                     helper.assertFalse(first[0].isPresent(), "Expected the cached handler to be invalidated");
-                    helper.assertFalse(helper.getBlockEntity(wallPos).getCapability(ForgeCapabilities.ITEM_HANDLER, Direction.UP).isPresent(),
+                    helper.assertFalse(helper.getBlockEntity(wallPos, BlockEntity.class).getCapability(ForgeCapabilities.ITEM_HANDLER, Direction.UP).isPresent(),
                             "Expected no item handler on a dormant interface");
                 })
                 .thenSucceed();
@@ -146,11 +145,11 @@ public class GameTestsCapabilitiesForge {
     public void testUncolossalChestItemHandler(GameTestHelper helper) {
         BlockPos pos = new BlockPos(1, 1, 1);
         helper.setBlock(pos, RegistryEntries.BLOCK_UNCOLOSSAL_CHEST.value());
-        IItemHandler handler = helper.getBlockEntity(pos).getCapability(ForgeCapabilities.ITEM_HANDLER, Direction.UP).orElse(null);
+        IItemHandler handler = helper.getBlockEntity(pos, BlockEntity.class).getCapability(ForgeCapabilities.ITEM_HANDLER, Direction.UP).orElse(null);
         helper.assertTrue(handler != null, "Expected an item handler");
         helper.assertValueEqual(handler.getSlots(), 5, "slots");
         helper.assertTrue(handler.insertItem(4, new ItemStack(Items.STONE, 10), false).isEmpty(), "Expected the stone to fit");
-        helper.assertValueEqual(((Container) helper.getBlockEntity(pos)).getItem(4).getCount(), 10, "stored count");
+        helper.assertValueEqual(((Container) helper.getBlockEntity(pos, BlockEntity.class)).getItem(4).getCount(), 10, "stored count");
         helper.succeed();
     }
 

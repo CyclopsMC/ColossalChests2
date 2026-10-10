@@ -2,7 +2,7 @@ package org.cyclops.colossalchests2.advancement;
 
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.cyclops.colossalchests2.api.ChestMaterial;
 import org.cyclops.colossalchests2.storage.BootstrapTest;
 import org.junit.Test;
@@ -35,7 +35,7 @@ public class TestChestFormedTrigger extends BootstrapTest {
         assertEquals(Optional.of(ChestMaterial.OBSIDIAN), parse("{\"material\": \"colossalchests2:obsidian\", \"minimum_size\": 8}").material());
         assertEquals(Optional.of(8), parse("{\"material\": \"colossalchests2:obsidian\", \"minimum_size\": 8}").minimumSize());
         // Materials of mods that are not installed are accepted, and never match.
-        assertEquals(Optional.of(new ChestMaterial(ResourceLocation.fromNamespaceAndPath("othermod", "tin"))),
+        assertEquals(Optional.of(new ChestMaterial(Identifier.fromNamespaceAndPath("othermod", "tin"))),
                 parse("{\"material\": \"othermod:tin\"}").material());
     }
 

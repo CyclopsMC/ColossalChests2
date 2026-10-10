@@ -1,5 +1,7 @@
 package org.cyclops.colossalchests2.upgrade;
 
+import java.util.function.Consumer;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
@@ -9,7 +11,6 @@ import org.cyclops.colossalchests2.api.upgrade.ChestUpgrade;
 import org.cyclops.colossalchests2.api.upgrade.IChestUpgradeItem;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 
 /**
  * An item that installs a core upgrade when placed in a chest's upgrade slots.
@@ -38,11 +39,11 @@ public class ItemChestUpgrade extends Item implements IChestUpgradeItem {
      * The explanation is shown on shift by Cyclops Core, from the info lang key.
      */
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, Consumer<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, display, tooltip, flag);
         Component effect = upgrade.getEffect();
         if (effect != null) {
-            tooltip.add(effect.copy().withStyle(ChatFormatting.GRAY));
+            tooltip.accept(effect.copy().withStyle(ChatFormatting.GRAY));
         }
     }
 

@@ -7,12 +7,8 @@
     "XXX"
   ],
   "key": {
-    "X": {
-      "item": "minecraft:copper_ingot"
-    },
-    "L": {
-      "tag": "minecraft:logs"
-    }
+    "X": "minecraft:copper_ingot",
+    "L": "#minecraft:logs"
   },
   "result": {
     "id": "colossalchests2:chest_wall_copper",

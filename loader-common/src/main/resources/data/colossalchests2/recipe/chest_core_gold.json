@@ -2,12 +2,8 @@
   "type": "minecraft:crafting_shapeless",
   "category": "building",
   "ingredients": [
-    {
-      "item": "colossalchests2:chest_wall_gold"
-    },
-    {
-      "item": "minecraft:chest"
-    }
+    "colossalchests2:chest_wall_gold",
+    "minecraft:chest"
   ],
   "result": {
     "id": "colossalchests2:chest_core_gold",

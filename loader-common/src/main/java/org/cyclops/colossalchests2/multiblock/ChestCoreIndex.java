@@ -40,7 +40,7 @@ public final class ChestCoreIndex {
      * @param pos A changed position.
      */
     public static void requestValidationNear(Level level, BlockPos pos) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
         Set<BlockPos> cores = CORES.get(level);

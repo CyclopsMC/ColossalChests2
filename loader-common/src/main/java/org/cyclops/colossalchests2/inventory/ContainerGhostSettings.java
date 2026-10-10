@@ -4,7 +4,7 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -52,12 +52,12 @@ public abstract class ContainerGhostSettings extends AbstractContainerMenu {
     }
 
     @Override
-    public void clicked(int slotId, int button, ClickType clickType, Player player) {
+    public void clicked(int slotId, int button, ContainerInput clickType, Player player) {
         if (isGhostSlot(slotId)) {
             // Clicking copies one of the cursor in, or clears with an empty cursor.
-            if (clickType == ClickType.PICKUP || clickType == ClickType.QUICK_MOVE) {
+            if (clickType == ContainerInput.PICKUP || clickType == ContainerInput.QUICK_MOVE) {
                 ItemStack carried = getCarried();
-                getSlot(slotId).set(clickType == ClickType.PICKUP && !carried.isEmpty() ? carried.copyWithCount(1) : ItemStack.EMPTY);
+                getSlot(slotId).set(clickType == ContainerInput.PICKUP && !carried.isEmpty() ? carried.copyWithCount(1) : ItemStack.EMPTY);
             }
             return;
         }
@@ -103,7 +103,7 @@ public abstract class ContainerGhostSettings extends AbstractContainerMenu {
     }
 
     /**
-     * A settings slot, only changed through {@link #clicked(int, int, ClickType, Player)}.
+     * A settings slot, only changed through {@link #clicked(int, int, ContainerInput, Player)}.
      */
     public static class GhostSlot extends Slot {
 

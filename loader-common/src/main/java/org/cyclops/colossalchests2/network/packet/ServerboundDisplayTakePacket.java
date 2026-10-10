@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -18,7 +18,7 @@ import org.cyclops.cyclopscore.network.PacketBase;
  */
 public class ServerboundDisplayTakePacket extends PacketBase<ServerboundDisplayTakePacket> {
 
-    public static final Type<ServerboundDisplayTakePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Reference.MOD_ID, "display_take"));
+    public static final Type<ServerboundDisplayTakePacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Reference.MOD_ID, "display_take"));
     public static final StreamCodec<RegistryFriendlyByteBuf, ServerboundDisplayTakePacket> CODEC = getCodec(ServerboundDisplayTakePacket::new);
 
     private BlockPos pos;
@@ -61,7 +61,7 @@ public class ServerboundDisplayTakePacket extends PacketBase<ServerboundDisplayT
 
     @Override
     public void actionServer(Level level, ServerPlayer player) {
-        if (player.canInteractWithBlock(pos, 1.0)) {
+        if (player.isWithinBlockInteractionRange(pos, 1.0)) {
             DisplayWallInteractions.getShownWall(level, pos, face).ifPresent(wall -> DisplayWallInteractions.take(player, wall, face, single));
         }
     }

@@ -1,6 +1,5 @@
 package org.cyclops.colossalchests2.upgrade;
 
-import net.minecraft.world.item.Item;
 import org.cyclops.colossalchests2.api.upgrade.ChestUpgrade;
 import org.cyclops.cyclopscore.config.extendedconfig.ItemConfigCommon;
 import org.cyclops.cyclopscore.init.IModBase;
@@ -12,7 +11,7 @@ import org.cyclops.cyclopscore.init.IModBase;
 public class ItemChestUpgradeConfig<M extends IModBase> extends ItemConfigCommon<M> {
 
     public ItemChestUpgradeConfig(M mod, ChestUpgrade upgrade) {
-        super(mod, "upgrade_" + upgrade.getId().getPath(), eConfig -> new ItemChestUpgrade(new Item.Properties().stacksTo(16), upgrade));
+        super(mod, "upgrade_" + upgrade.getId().getPath(), (eConfig, props) -> new ItemChestUpgrade(props.stacksTo(16), upgrade));
     }
 
 }

@@ -1,12 +1,13 @@
 package org.cyclops.colossalchests2.api.block;
 
+import net.minecraft.server.level.ServerLevel;
+import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -34,22 +35,22 @@ public class ChestMemberBlock extends Block implements IChestMember {
     }
 
     @Override
-    protected VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) {
-        return IChestMember.getFormedOcclusionShape(state, super.getOcclusionShape(state, level, pos));
+    protected VoxelShape getOcclusionShape(BlockState state) {
+        return IChestMember.getFormedOcclusionShape(state, super.getOcclusionShape(state));
     }
 
     @Override
-    protected int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) {
-        return IChestMember.getFormedLightBlock(state, super.getLightBlock(state, level, pos));
+    protected int getLightDampening(BlockState state) {
+        return IChestMember.getFormedLightBlock(state, super.getLightDampening(state));
     }
 
     @Override
-    protected boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
-        return IChestMember.getFormedPropagatesSkylightDown(state, super.propagatesSkylightDown(state, level, pos));
+    protected boolean propagatesSkylightDown(BlockState state) {
+        return IChestMember.getFormedPropagatesSkylightDown(state, super.propagatesSkylightDown(state));
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         return ColossalChestsApi.get().useItemOnMember(stack, state);
     }
 
@@ -67,16 +68,14 @@ public class ChestMemberBlock extends Block implements IChestMember {
     }
 
     @Override
-    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-        if (!state.is(newState.getBlock())) {
-            ColossalChestsApi.get().requestValidationNear(level, pos);
-        }
-        super.onRemove(state, level, pos, newState, movedByPiston);
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean movedByPiston) {
+        ColossalChestsApi.get().requestValidationNear(level, pos);
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 
     @Override
-    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, BlockPos neighborPos, boolean movedByPiston) {
-        super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, @Nullable Orientation orientation, boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, neighborBlock, orientation, movedByPiston);
         ColossalChestsApi.get().requestValidationNear(level, pos);
     }
 

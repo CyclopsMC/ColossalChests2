@@ -18,7 +18,7 @@ import org.cyclops.colossalchests2.api.upgrade.ChestUpgrade;
 import org.cyclops.colossalchests2.block.BlockChestCoreConfig;
 import org.cyclops.colossalchests2.block.BlockChestFunctionalWallConfig;
 import org.cyclops.colossalchests2.block.BlockChestWallConfig;
-import org.cyclops.colossalchests2.block.BlockUncolossalChestConfigFabric;
+import org.cyclops.colossalchests2.block.BlockUncolossalChestConfig;
 import org.cyclops.colossalchests2.block.BuiltInMaterial;
 import org.cyclops.colossalchests2.block.DisplayWallInteractions;
 import org.cyclops.colossalchests2.block.WallType;
@@ -31,6 +31,8 @@ import org.cyclops.colossalchests2.component.DataComponentChestUpgradesConfig;
 import org.cyclops.colossalchests2.component.DataComponentMaterialTargetConfig;
 import org.cyclops.colossalchests2.config.ChestTablesReloadListenerFabric;
 import org.cyclops.colossalchests2.gametest.GameTestAddon;
+import org.cyclops.colossalchests2.gametest.GameTestsCapabilitiesFabric;
+import org.cyclops.colossalchests2.gametest.GameTestsCommon;
 import org.cyclops.colossalchests2.inventory.ContainerChestConfig;
 import org.cyclops.colossalchests2.inventory.ContainerDisplayConfig;
 import org.cyclops.colossalchests2.inventory.ContainerInterfaceConfig;
@@ -129,12 +131,17 @@ public class ColossalChestsFabric extends ModBaseFabric<ColossalChestsFabric> im
         }
         configHandler.addConfigurable(new BlockEntityChestCoreConfigFabric<>(this));
         configHandler.addConfigurable(new BlockEntityChestWallConfigFabric<>(this));
-        configHandler.addConfigurable(new BlockUncolossalChestConfigFabric<>(this));
+        configHandler.addConfigurable(new BlockUncolossalChestConfig<>(this));
         configHandler.addConfigurable(new BlockEntityUncolossalChestConfigFabric<>(this));
         configHandler.addConfigurable(new ContainerInterfaceConfig<>(this));
         configHandler.addConfigurable(new ContainerDisplayConfig<>(this));
         configHandler.addConfigurable(new ContainerRedstoneConfig<>(this));
         configHandler.addConfigurable(new ContainerMagnetConfig<>(this));
         configHandler.addConfigurable(new ContainerMaterialUpgradeToolConfig<>(this));
+    }
+
+    @Override
+    public Class<?>[] getGameTestClasses() {
+        return new Class<?>[] { GameTestsCommon.class, GameTestsCapabilitiesFabric.class };
     }
 }

@@ -37,7 +37,7 @@ public class ContainerMaterialUpgradeTool extends AbstractContainerMenu {
 
             @Override
             public int get() {
-                return player.level().isClientSide ? value : ItemMaterialUpgradeTool.getTarget(getTool())
+                return player.level().isClientSide() ? value : ItemMaterialUpgradeTool.getTarget(getTool())
                         .map(ChestMaterial.getAll()::indexOf).orElse(-1);
             }
 

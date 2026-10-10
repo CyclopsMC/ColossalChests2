@@ -41,13 +41,13 @@ repositories {
 }
 
 dependencies {
-    implementation "org.cyclops.colossalchests2:colossalchests2-1.21.1-neoforge:<version>:deobf"
-    implementation "org.cyclops.cyclopscore:cyclopscore-1.21.1-neoforge:<version>:deobf"
+    implementation "org.cyclops.colossalchests2:colossalchests2-26.1.2-neoforge:<version>"
+    implementation "org.cyclops.cyclopscore:cyclopscore-26.1.2-neoforge:<version>"
 }
 ```
 
 Materials:
-* Register a wall and a core from `createWall` and `createCore` with `new ChestMaterial(id)`.
+* Register a wall and a core from `createWall` and `createCore` with `new ChestMaterial(id)`, and their items from `createMemberItem`, which show the material limits.
 * Define the material in `data/<ns>/colossalchests2/material/<name>.json`, with `after` (such as `colossalchests2:copper`), `max_size`, `upgrade_slots`, `blast_resistant` and `upgrade_limits`. This mod's materials are defined the same way, so datapacks can change or reorder them.
 * Add the giant chest texture `textures/entity/chest/<name>.png` and the lang key `material.<ns>.<name>`.
 
@@ -72,14 +72,7 @@ Functional walls:
 
 ### Branching Strategy
 
-For every major Minecraft version, two branches exist:
-
-* `master-{mc_version}`: Latest (potentially unstable) development.
-* `release-{mc_version}`: Latest stable release for that Minecraft version. This is also tagged with all mod releases.
-
-### Building and setting up a development environment
-
-This mod uses [Project Lombok](http://projectlombok.org/) -- an annotation processor that allows us you to generate constructors, getters and setters using annotations -- to speed up recurring tasks and keep part of our codebase clean at the same time. Because of this it is advised that you install a plugin for your IDE that supports Project Lombok. Should you encounter any weird errors concerning missing getter or setter methods, it's probably because your code has not been processed by Project Lombok's processor. A list of Project Lombok plugins can be found [here](http://projectlombok.org/download.html).
+For every major Minecraft version, a `master-{mc_version}` branch exists.
 
 ### License
 All code and images are licenced under the [MIT License](LICENSE.txt)

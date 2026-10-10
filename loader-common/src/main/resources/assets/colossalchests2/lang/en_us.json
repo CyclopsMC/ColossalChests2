@@ -1,5 +1,6 @@
 {
   "itemGroup.colossalchests2": "Colossal Chests 2",
+  "tag.item.colossalchests2.chest_walls": "Chest Walls",
   "general.colossalchests2.description": "Chests that are quite colossal, and can be upgraded.",
   "block.colossalchests2.chest_wall_wood": "Wooden Chest Wall",
   "block.colossalchests2.chest_core_wood": "Wooden Chest Core",

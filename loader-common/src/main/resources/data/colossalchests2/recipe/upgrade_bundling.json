@@ -7,15 +7,9 @@
     "LSL"
   ],
   "key": {
-    "L": {
-      "item": "minecraft:leather"
-    },
-    "S": {
-      "item": "minecraft:string"
-    },
-    "C": {
-      "tag": "colossalchests2:chest_walls"
-    }
+    "L": "minecraft:leather",
+    "S": "minecraft:string",
+    "C": "#colossalchests2:chest_walls"
   },
   "result": {
     "id": "colossalchests2:upgrade_bundling",

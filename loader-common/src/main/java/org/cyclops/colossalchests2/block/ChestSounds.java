@@ -61,7 +61,7 @@ public final class ChestSounds {
      */
     public static void play(Level level, Vec3 center, int size, boolean open) {
         level.playSound(null, center.x, center.y, center.z, open ? SoundEvents.CHEST_OPEN : SoundEvents.CHEST_CLOSE, SoundSource.BLOCKS,
-                getVolume(size), getPitch(size) * getPitchVariation(level.random));
+                getVolume(size), getPitch(size) * getPitchVariation(level.getRandom()));
     }
 
 }

@@ -1,7 +1,7 @@
 package org.cyclops.colossalchests2.inventory;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.cyclops.colossalchests2.storage.DeepSlot;
 
@@ -46,7 +46,7 @@ public final class ChestSearch {
 
     private static boolean matchesAlternative(ItemStack stack, String alternative, Function<ItemStack, String> names,
                                               Function<ItemStack, List<String>> tooltips) {
-        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (alternative.isEmpty()) {
             return false;
         }
@@ -54,7 +54,7 @@ public final class ChestSearch {
         return switch (alternative.charAt(0)) {
             case '@' -> id.getNamespace().contains(needle);
             case '#' -> tooltips.apply(stack).stream().anyMatch(line -> line.toLowerCase(Locale.ROOT).contains(needle));
-            case '$' -> stack.getTags().anyMatch(tag -> tag.location().toString().contains(needle));
+            case '$' -> stack.typeHolder().tags().anyMatch(tag -> tag.location().toString().contains(needle));
             default -> names.apply(stack).toLowerCase(Locale.ROOT).contains(alternative) || id.toString().contains(alternative);
         };
     }

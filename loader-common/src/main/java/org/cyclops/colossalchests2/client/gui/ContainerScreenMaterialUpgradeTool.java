@@ -1,7 +1,7 @@
 package org.cyclops.colossalchests2.client.gui;
 
 import com.google.common.collect.Lists;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -25,15 +25,13 @@ public class ContainerScreenMaterialUpgradeTool extends AbstractContainerScreen<
     private static final int BUTTON_SIZE = 20;
     private static final int BUTTON_SPACING = 22;
     private static final int COLUMNS = 7;
-    private static final int COLOR_LABEL = 0x404040;
-    private static final int COLOR_HINT = 0x707070;
+    private static final int COLOR_LABEL = 0xFF404040;
+    private static final int COLOR_HINT = 0xFF707070;
 
     private final List<Button> buttons = Lists.newArrayList();
 
     public ContainerScreenMaterialUpgradeTool(ContainerMaterialUpgradeTool menu, Inventory inventory, Component title) {
-        super(menu, inventory, title);
-        this.imageWidth = WIDTH;
-        this.imageHeight = HEIGHT + (getRows() - 1) * BUTTON_SPACING;
+        super(menu, inventory, title, WIDTH, HEIGHT + (getRows() - 1) * BUTTON_SPACING);
     }
 
     private static int getRows() {
@@ -81,28 +79,28 @@ public class ContainerScreenMaterialUpgradeTool extends AbstractContainerScreen<
     }
 
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
         GuiPanels.drawPanel(guiGraphics, leftPos, topPos, imageWidth, imageHeight);
     }
 
     @Override
-    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        guiGraphics.drawString(font, title, titleLabelX, titleLabelY, COLOR_LABEL, false);
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        guiGraphics.text(font, title, titleLabelX, titleLabelY, COLOR_LABEL, false);
         int target = menu.getTarget();
         Component label = target < 0
                 ? Component.translatable("gui.colossalchests2.material_upgrade_tool.no_target")
                 : Component.translatable("gui.colossalchests2.material_upgrade_tool.target", ChestMaterial.getAll().get(target).getDisplayName());
-        guiGraphics.drawString(font, label, (WIDTH - font.width(label)) / 2, getLabelY(), COLOR_LABEL, false);
+        guiGraphics.text(font, label, (WIDTH - font.width(label)) / 2, getLabelY(), COLOR_LABEL, false);
         Component hint = Component.translatable("gui.colossalchests2.material_upgrade_tool.hint");
-        guiGraphics.drawString(font, hint, (WIDTH - font.width(hint)) / 2, getLabelY() + 14, COLOR_HINT, false);
+        guiGraphics.text(font, hint, (WIDTH - font.width(hint)) / 2, getLabelY() + 14, COLOR_HINT, false);
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
         for (int i = 0; i < ChestMaterial.getAll().size(); i++) {
-            guiGraphics.renderItem(new ItemStack(ChestMaterial.getAll().get(i).getWallBlock()), getButtonX(i) + 2, getButtonY(i) + 2);
+            guiGraphics.item(new ItemStack(ChestMaterial.getAll().get(i).getWallBlock()), getButtonX(i) + 2, getButtonY(i) + 2);
         }
-        renderTooltip(guiGraphics, mouseX, mouseY);
     }
 }

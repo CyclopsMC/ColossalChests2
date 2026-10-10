@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.cyclops.colossalchests2.api.MaterialProperties;
 import org.cyclops.colossalchests2.api.UpgradeProperties;
 
@@ -37,7 +37,7 @@ public class ChestTablesLoader {
      * @param files Files below {@link #DIRECTORY}, by id with a material/ or upgrade/ path prefix.
      * @return The tables.
      */
-    public static ChestTables fromJson(Map<ResourceLocation, JsonElement> files) {
+    public static ChestTables fromJson(Map<Identifier, JsonElement> files) {
         return fromJson(files, error -> {
             throw error;
         });
@@ -49,17 +49,17 @@ public class ChestTablesLoader {
      * @param onError Called for each invalid file, which is then skipped.
      * @return The tables.
      */
-    public static ChestTables fromJson(Map<ResourceLocation, JsonElement> files, Consumer<IllegalArgumentException> onError) {
-        ImmutableMap.Builder<ResourceLocation, MaterialProperties> materials = ImmutableMap.builder();
-        ImmutableMap.Builder<ResourceLocation, UpgradeProperties> upgrades = ImmutableMap.builder();
+    public static ChestTables fromJson(Map<Identifier, JsonElement> files, Consumer<IllegalArgumentException> onError) {
+        ImmutableMap.Builder<Identifier, MaterialProperties> materials = ImmutableMap.builder();
+        ImmutableMap.Builder<Identifier, UpgradeProperties> upgrades = ImmutableMap.builder();
         files.forEach((id, json) -> {
             try {
                 String path = id.getPath();
                 if (path.startsWith("material/")) {
-                    ResourceLocation material = id.withPath(path.substring("material/".length()));
+                    Identifier material = id.withPath(path.substring("material/".length()));
                     materials.put(material, parse(MaterialProperties.CODEC, json, "material " + material));
                 } else if (path.startsWith("upgrade/")) {
-                    ResourceLocation upgrade = id.withPath(path.substring("upgrade/".length()));
+                    Identifier upgrade = id.withPath(path.substring("upgrade/".length()));
                     upgrades.put(upgrade, parse(UpgradeProperties.CODEC, json, "upgrade " + upgrade));
                 }
             } catch (IllegalArgumentException e) {

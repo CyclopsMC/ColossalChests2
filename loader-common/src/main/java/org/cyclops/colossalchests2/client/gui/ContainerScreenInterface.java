@@ -1,7 +1,7 @@
 package org.cyclops.colossalchests2.client.gui;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
@@ -25,9 +25,7 @@ public class ContainerScreenInterface extends AbstractContainerScreen<ContainerI
     private WallAccess.Mode shownMode;
 
     public ContainerScreenInterface(ContainerInterface menu, Inventory inventory, Component title) {
-        super(menu, inventory, title);
-        this.imageWidth = ContainerInterface.WIDTH;
-        this.imageHeight = ContainerInterface.HEIGHT;
+        super(menu, inventory, title, ContainerInterface.WIDTH, ContainerInterface.HEIGHT);
         this.inventoryLabelY = ContainerInterface.INVENTORY_Y - 11;
     }
 
@@ -56,32 +54,28 @@ public class ContainerScreenInterface extends AbstractContainerScreen<ContainerI
     }
 
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
         GuiPanels.drawPanel(guiGraphics, leftPos, topPos, imageWidth, imageHeight);
         for (Slot slot : menu.slots) {
             GuiPanels.drawSlot(guiGraphics, leftPos + slot.x, topPos + slot.y);
         }
     }
 
-    @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
-        renderTooltip(guiGraphics, mouseX, mouseY);
-    }
 
     @Override
-    protected void renderTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    protected void extractTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         if (menu.getCarried().isEmpty() && hoveredSlot != null && menu.isGhostSlot(hoveredSlot.index) && !hoveredSlot.hasItem()) {
             String key = "gui.colossalchests2.wall.filter";
-            guiGraphics.renderComponentTooltip(font, List.of(Component.translatable(key),
+            guiGraphics.setComponentTooltipForNextFrame(font, List.of(Component.translatable(key),
                     Component.translatable(key + ".info").withStyle(ChatFormatting.GRAY)), mouseX, mouseY);
             return;
         }
         if (modeButton.isHovered()) {
-            guiGraphics.renderComponentTooltip(font, List.of(Component.translatable("gui.colossalchests2.wall.mode"),
+            guiGraphics.setComponentTooltipForNextFrame(font, List.of(Component.translatable("gui.colossalchests2.wall.mode"),
                     Component.translatable(menu.getMode().getTranslationKey() + ".info").withStyle(ChatFormatting.GRAY)), mouseX, mouseY);
             return;
         }
-        super.renderTooltip(guiGraphics, mouseX, mouseY);
+        super.extractTooltip(guiGraphics, mouseX, mouseY);
     }
 }

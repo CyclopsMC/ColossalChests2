@@ -4,7 +4,7 @@ import net.minecraft.world.flag.FeatureFlags;
 import org.cyclops.cyclopscore.config.extendedconfig.GuiConfigCommon;
 import org.cyclops.cyclopscore.config.extendedconfig.GuiConfigScreenFactoryProvider;
 import org.cyclops.cyclopscore.init.IModBase;
-import org.cyclops.cyclopscore.inventory.container.ContainerTypeDataCommon;
+import org.cyclops.cyclopscore.inventory.container.ContainerTypeData;
 
 /**
  * Config for {@link ContainerDisplay}.
@@ -13,7 +13,7 @@ import org.cyclops.cyclopscore.inventory.container.ContainerTypeDataCommon;
 public class ContainerDisplayConfig<M extends IModBase> extends GuiConfigCommon<ContainerDisplay, M> {
 
     public ContainerDisplayConfig(M mod) {
-        super(mod, "display", eConfig -> new ContainerTypeDataCommon<>(ContainerDisplay::new, FeatureFlags.VANILLA_SET));
+        super(mod, "display", eConfig -> new ContainerTypeData<>(ContainerDisplay::new, FeatureFlags.VANILLA_SET));
     }
 
     @Override

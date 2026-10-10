@@ -1,8 +1,7 @@
 package org.cyclops.colossalchests2.gametest;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
@@ -33,13 +32,13 @@ public final class GameTestAddon {
      * by the material instead of the upgrade. That file does nothing outside game tests, as the blocks are missing.
      * Its namespace differs from its blocks', like a material of another mod.
      */
-    public static final ChestMaterial MATERIAL = new ChestMaterial(ResourceLocation.fromNamespaceAndPath(ColossalChestsApi.MOD_ID + "test", "test_addon"));
+    public static final ChestMaterial MATERIAL = new ChestMaterial(Identifier.fromNamespaceAndPath(ColossalChestsApi.MOD_ID + "test", "test_addon"));
 
     /**
      * Refuses dirt, and adds a cobblestone every second. Defined by data/colossalchests2/colossalchests2/upgrade/test_addon.json,
      * which does nothing outside game tests, as the upgrade is missing.
      */
-    public static final ChestUpgrade UPGRADE = new ChestUpgrade(ResourceLocation.fromNamespaceAndPath(ColossalChestsApi.MOD_ID, "test_addon")) {
+    public static final ChestUpgrade UPGRADE = new ChestUpgrade(Identifier.fromNamespaceAndPath(ColossalChestsApi.MOD_ID, "test_addon")) {
         @Override
         public boolean canInsert(IChest chest, ItemStack type, int count) {
             return !type.is(Items.DIRT);
@@ -56,7 +55,7 @@ public final class GameTestAddon {
     /**
      * The id of the wall, registered by {@link WallConfig}.
      */
-    public static final ResourceLocation WALL = ResourceLocation.fromNamespaceAndPath(ColossalChestsApi.MOD_ID, "test_addon_wall");
+    public static final Identifier WALL = Identifier.fromNamespaceAndPath(ColossalChestsApi.MOD_ID, "test_addon_wall");
 
     private GameTestAddon() {
     }
@@ -79,8 +78,8 @@ public final class GameTestAddon {
     /**
      * @return New properties for a wall or core of the test material.
      */
-    public static Block.Properties createProperties() {
-        return Block.Properties.of().strength(2.5F, 6.0F).sound(SoundType.AMETHYST);
+    public static Block.Properties createProperties(Block.Properties properties) {
+        return properties.strength(2.5F, 6.0F).sound(SoundType.AMETHYST);
     }
 
     /**
@@ -88,8 +87,8 @@ public final class GameTestAddon {
      */
     public static class MaterialWallConfig<M extends IModBase> extends BlockConfigCommon<M> {
         public MaterialWallConfig(M mod) {
-            super(mod, "chest_wall_" + MATERIAL.getName(), eConfig -> ColossalChestsApi.get().createWall(createProperties(), MATERIAL),
-                    getDefaultItemConstructor(mod));
+            super(mod, "chest_wall_" + MATERIAL.getName(), (eConfig, props) -> ColossalChestsApi.get().createWall(createProperties(props), MATERIAL),
+                    (eConfig, block) -> ColossalChestsApi.get().createMemberItem(block, eConfig.createDefaultItemProperties()));
         }
     }
 
@@ -98,8 +97,8 @@ public final class GameTestAddon {
      */
     public static class MaterialCoreConfig<M extends IModBase> extends BlockConfigCommon<M> {
         public MaterialCoreConfig(M mod) {
-            super(mod, "chest_core_" + MATERIAL.getName(), eConfig -> ColossalChestsApi.get().createCore(createProperties(), MATERIAL),
-                    getDefaultItemConstructor(mod));
+            super(mod, "chest_core_" + MATERIAL.getName(), (eConfig, props) -> ColossalChestsApi.get().createCore(createProperties(props), MATERIAL),
+                    (eConfig, block) -> ColossalChestsApi.get().createMemberItem(block, eConfig.createDefaultItemProperties()));
         }
     }
 
@@ -109,7 +108,7 @@ public final class GameTestAddon {
     public static class UpgradeConfig<M extends IModBase> extends ItemConfigCommon<M> {
         public UpgradeConfig(M mod) {
             super(mod, "upgrade_" + UPGRADE.getId().getPath(),
-                    eConfig -> ColossalChestsApi.get().createUpgradeItem(new Item.Properties().stacksTo(16), UPGRADE));
+                    (eConfig, props) -> ColossalChestsApi.get().createUpgradeItem(props.stacksTo(16), UPGRADE));
         }
     }
 
@@ -139,7 +138,7 @@ public final class GameTestAddon {
      */
     public static class WallConfig<M extends IModBase> extends BlockConfigCommon<M> {
         public WallConfig(M mod) {
-            super(mod, WALL.getPath(), eConfig -> new Wall(Block.Properties.of().strength(2.5F)), getDefaultItemConstructor(mod));
+            super(mod, WALL.getPath(), (eConfig, props) -> new Wall(props.strength(2.5F)), getDefaultItemConstructor(mod));
         }
     }
 

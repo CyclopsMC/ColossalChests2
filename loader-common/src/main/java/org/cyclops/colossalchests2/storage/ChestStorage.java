@@ -7,7 +7,7 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.cyclops.colossalchests2.api.IChestContents;
@@ -755,13 +755,13 @@ public class ChestStorage implements IChestContents {
 
         public record Entry(int slot, ItemStack item, long count, long remainder, boolean locked, boolean voiding, Optional<Item> form) {
             // Unknown form items decode as no form, which falls back to the default form.
-            private static final Codec<Optional<Item>> CODEC_FORM = ResourceLocation.CODEC.xmap(
+            private static final Codec<Optional<Item>> CODEC_FORM = Identifier.CODEC.xmap(
                     BuiltInRegistries.ITEM::getOptional,
                     form -> BuiltInRegistries.ITEM.getKey(form.orElseThrow()));
 
             public static final Codec<Entry> CODEC = RecordCodecBuilder.create(i -> i.group(
                     Codec.intRange(0, Integer.MAX_VALUE).fieldOf("slot").forGetter(Entry::slot),
-                    ItemStack.SINGLE_ITEM_CODEC.fieldOf("item").forGetter(Entry::item),
+                    ItemStack.CODEC.fieldOf("item").forGetter(Entry::item),
                     Codec.LONG.fieldOf("count").forGetter(Entry::count),
                     Codec.LONG.optionalFieldOf("remainder", 0L).forGetter(Entry::remainder),
                     Codec.BOOL.optionalFieldOf("locked", false).forGetter(Entry::locked),

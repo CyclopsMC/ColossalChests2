@@ -2,6 +2,7 @@
 
 plugins {
     id 'multiloader-loader'
+    id 'net.minecraftforge.accesstransformers'
     id 'net.minecraftforge.gradle'
 }
 
@@ -9,6 +10,9 @@ plugins {
 def extraModsDir = "extra-mods"
 
 repositories {
+    maven minecraft.mavenizer
+    maven fg.forgeMaven
+    maven fg.minecraftLibsMaven
     flatDir {
         name "extra-mods"
         dir file(extraModsDir)
@@ -16,7 +20,9 @@ repositories {
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    implementation minecraft.dependency("net.minecraftforge:forge:${minecraft_version}-${forge_version}")
+    annotationProcessor 'net.minecraftforge:eventbus-validator:7.0-beta.10'
+    annotationProcessor 'org.spongepowered:mixin:0.8.7:processor'
 
     testImplementation "junit:junit:4.12"
     testImplementation "org.mockito:mockito-core:1.+"
@@ -40,65 +46,48 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 minecraft {
     mappings channel: 'official', version: minecraft_version
 
-    reobf = false
-
-    copyIdeResources.set(true)
-
     // Automatically enable neoforge AccessTransformers if the file exists
     def at = project(':loader-common').file('src/main/resources/META-INF/accesstransformer.cfg')
     if (at.exists()) {
-        accessTransformer = file(at.absolutePath)
+        accessTransformers = files(at.absolutePath)
     }
 
     runs {
-        client {
-            property 'forge.enabledGameTestNamespaces', "cyclopscore,${mod_id}"
-            workingDirectory file('runs/client')
-            ideaModule "${rootProject.name}.${project.name}.main"
-            taskName 'Client'
-            mods {
-                modClientRun {
-                    source sourceSets.main
-                }
-            }
+        configureEach {
+            workingDir.convention layout.projectDirectory.dir('run')
+            //systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'forge.logging.console.level', 'debug'
+            systemProperty 'eventbus.api.strictRuntimeChecks', 'true'
+            // Mixin requires the config to be specified via command line in a dev environment
+            args "--mixin.config=mixins.${mod_id}.json"
         }
 
-        server {
-            property 'forge.enabledGameTestNamespaces', "cyclopscore,${mod_id}"
-            args '--nogui'
-            workingDirectory file('runs/server')
-            ideaModule "${rootProject.name}.${project.name}.main"
-            taskName 'Server'
-            mods {
-                modServerRun {
-                    source sourceSets.main
-                }
-            }
+        register('client') {
+            systemProperty 'forge.enabledGameTestNamespaces', "cyclopscore,${mod_id}"
+            jvmArgs "-XstartOnFirstThread" // Fixes startup error
         }
 
-        gameTestServer {
-            property 'forge.enabledGameTestNamespaces', "cyclopscore,${mod_id}"
-            workingDirectory file('runs/gametest')
-            ideaModule "${rootProject.name}.${project.name}.main"
-            taskName 'runGameTestServer'
-            mods {
-                modDataRun {
-                    source sourceSets.main
-                }
-            }
+        register('server') {
+            systemProperty 'forge.enabledGameTestNamespaces', "cyclopscore,${mod_id}"
         }
 
-        data {
-            workingDirectory file('runs/data')
-            ideaModule "${rootProject.name}.${project.name}.main"
-            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
-            taskName 'Data'
-            mods {
-                modDataRun {
-                    source sourceSets.main
-                }
-            }
+        register('gameTestServer') {
+            systemProperty 'forge.enabledGameTestNamespaces', "cyclopscore,${mod_id}"
+            systemProperty 'forge.gameTestServer', 'true'
+            systemProperty 'net.minecraftforge.launcher.skip.assets', 'true'
         }
+
+        register('data') {
+            workingDir = layout.projectDirectory.dir('run-data')
+            args '--mod', mod_id, '--all', '--output', layout.projectDirectory.dir('src/generated/resources'), '--existing', layout.projectDirectory.dir('src/main/resources')
+        }
+    }
+}
+
+tasks.named('jar', Jar) {
+    manifest {
+        // Tell Mixin about our config so it is detected at runtime (in production)
+        attributes['MixinConfigs'] = "mixins.${mod_id}.json"
     }
 }
 

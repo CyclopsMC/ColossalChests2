@@ -1,9 +1,10 @@
 package org.cyclops.colossalchests2;
 
+import org.cyclops.colossalchests2.block.ItemBlockTooltip;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -47,6 +48,11 @@ public class ColossalChestsApiImpl implements IColossalChestsApi {
     }
 
     @Override
+    public BlockItem createMemberItem(Block block, Item.Properties properties) {
+        return new ItemBlockTooltip(block, properties);
+    }
+
+    @Override
     public void registerUpgrade(ChestUpgrade upgrade) {
         ChestUpgrades.register(upgrade);
     }
@@ -63,7 +69,7 @@ public class ColossalChestsApiImpl implements IColossalChestsApi {
 
     @Nullable
     @Override
-    public ChestUpgrade getUpgrade(ResourceLocation id) {
+    public ChestUpgrade getUpgrade(Identifier id) {
         return ChestUpgrades.byId(id);
     }
 
@@ -85,17 +91,17 @@ public class ColossalChestsApiImpl implements IColossalChestsApi {
     }
 
     @Override
-    public MaterialProperties getMaterialProperties(ResourceLocation material) {
+    public MaterialProperties getMaterialProperties(Identifier material) {
         return ChestTablesLoader.get().getMaterial(material);
     }
 
     @Override
-    public UpgradeProperties getUpgradeProperties(ResourceLocation upgrade) {
+    public UpgradeProperties getUpgradeProperties(Identifier upgrade) {
         return ChestTablesLoader.get().getUpgrade(upgrade);
     }
 
     @Override
-    public int getMaxUpgradeCount(ResourceLocation upgrade, ResourceLocation material) {
+    public int getMaxUpgradeCount(Identifier upgrade, Identifier material) {
         return ChestTablesLoader.get().getMaxUpgradeCount(upgrade, material);
     }
 
@@ -115,7 +121,7 @@ public class ColossalChestsApiImpl implements IColossalChestsApi {
     }
 
     @Override
-    public ItemInteractionResult useItemOnMember(ItemStack stack, BlockState state) {
+    public InteractionResult useItemOnMember(ItemStack stack, BlockState state) {
         return ChestInteractions.useItemOn(stack, state);
     }
 

@@ -4,7 +4,7 @@ import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.item.component.ItemContainerContents;
@@ -23,7 +23,7 @@ public final class NestedChests {
     /**
      * The item component of a core item that carries the chest's contents.
      */
-    public static final ResourceLocation CONTENTS_COMPONENT = ResourceLocation.fromNamespaceAndPath(Reference.MOD_ID, "chest_contents");
+    public static final Identifier CONTENTS_COMPONENT = Identifier.fromNamespaceAndPath(Reference.MOD_ID, "chest_contents");
     // Deeper nesting is refused outright, so a crafted stack can not make this check itself expensive.
     private static final int MAX_DEPTH = 8;
 
@@ -54,7 +54,7 @@ public final class NestedChests {
         }
         ItemContainerContents container = stack.get(DataComponents.CONTAINER);
         if (container != null) {
-            for (ItemStack inner : container.nonEmptyItems()) {
+            for (ItemStack inner : container.nonEmptyItemCopyStream().toList()) {
                 if (holdsChestContents(inner, depth + 1)) {
                     return true;
                 }
@@ -62,7 +62,7 @@ public final class NestedChests {
         }
         BundleContents bundle = stack.get(DataComponents.BUNDLE_CONTENTS);
         if (bundle != null) {
-            for (ItemStack inner : bundle.items()) {
+            for (ItemStack inner : bundle.itemCopyStream().toList()) {
                 if (holdsChestContents(inner, depth + 1)) {
                     return true;
                 }

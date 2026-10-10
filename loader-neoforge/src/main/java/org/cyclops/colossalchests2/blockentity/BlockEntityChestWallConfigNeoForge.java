@@ -2,14 +2,13 @@ package org.cyclops.colossalchests2.blockentity;
 
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import org.cyclops.colossalchests2.capability.ItemHandlerChestStorage;
-import org.cyclops.cyclopscore.init.ModBase;
+import org.cyclops.cyclopscore.init.ModBaseNeoForge;
 
 /**
- * NeoForge config for the {@link BlockEntityChestWall}, exposing item handlers on formed functional walls.
+ * NeoForge config for the {@link BlockEntityChestWall}, exposing item resource handlers on formed functional walls.
  * @author rubensworks
  */
-public class BlockEntityChestWallConfigNeoForge<M extends ModBase<?>> extends BlockEntityChestWallConfig<M> {
+public class BlockEntityChestWallConfigNeoForge<M extends ModBaseNeoForge<?>> extends BlockEntityChestWallConfig<M> {
 
     public BlockEntityChestWallConfigNeoForge(M mod) {
         super(mod, BlockEntityChestWall::new);
@@ -17,7 +16,9 @@ public class BlockEntityChestWallConfigNeoForge<M extends ModBase<?>> extends Bl
     }
 
     protected void registerCapabilities(RegisterCapabilitiesEvent event) {
-        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, getInstance(),
-                (wall, side) -> wall.getItemHandlerLogic().map(ItemHandlerChestStorage::new).orElse(null));
+        event.registerBlockEntity(Capabilities.Item.BLOCK, getInstance(),
+                (wall, side) -> wall.getExposedCore()
+                        .map(core -> ((BlockEntityChestCoreNeoForge) core).getResourceHandler().withAccess(wall.getAccess()))
+                        .orElse(null));
     }
 }

@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 
 import java.util.List;
@@ -17,7 +17,7 @@ import java.util.Optional;
  * @param id The material id, matching its data file.
  * @author rubensworks
  */
-public record ChestMaterial(ResourceLocation id) {
+public record ChestMaterial(Identifier id) {
 
     // Ids of this mod's materials, for code that refers to them. Materials are not registered here.
     public static final ChestMaterial WOOD = new ChestMaterial(id("wood"));
@@ -31,15 +31,15 @@ public record ChestMaterial(ResourceLocation id) {
     /**
      * Accepts any id, so data can refer to materials of mods that are not installed.
      */
-    public static final Codec<ChestMaterial> CODEC = ResourceLocation.CODEC.xmap(ChestMaterial::new, ChestMaterial::id);
+    public static final Codec<ChestMaterial> CODEC = Identifier.CODEC.xmap(ChestMaterial::new, ChestMaterial::id);
 
     /**
      * The materials of this mod, which it registers blocks for.
      */
     public static final List<ChestMaterial> BUILT_IN = ImmutableList.of(WOOD, COPPER, IRON, GOLD, DIAMOND, OBSIDIAN, NETHERITE);
 
-    private static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(ColossalChestsApi.MOD_ID, path);
+    private static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath(ColossalChestsApi.MOD_ID, path);
     }
 
     /**
@@ -96,7 +96,7 @@ public record ChestMaterial(ResourceLocation id) {
     /**
      * @return The material with this id, if it has a core block.
      */
-    public static Optional<ChestMaterial> byId(ResourceLocation id) {
+    public static Optional<ChestMaterial> byId(Identifier id) {
         return getAll().stream().filter(material -> material.id().equals(id)).findFirst();
     }
 

@@ -3,10 +3,10 @@ package org.cyclops.colossalchests2.storage;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
@@ -41,45 +41,66 @@ public final class CompressionDiscovery {
 
     /**
      * @param recipes The recipes.
-     * @param registries Registries, to read recipe results.
      * @return The two-way conversions in the crafting recipes.
      */
-    public static List<Conversion> findConversions(RecipeManager recipes, HolderLookup.Provider registries) {
+    public static List<Conversion> findConversions(RecipeManager recipes) {
         // Larger form to the compressions that make it, and smaller form by larger form for decompressions.
         Map<Item, List<Compress>> compressions = Maps.newHashMap();
         Map<Item, Map<Item, Integer>> decompressions = Maps.newHashMap();
-        for (RecipeHolder<CraftingRecipe> holder : recipes.getAllRecipesFor(RecipeType.CRAFTING)) {
-            CraftingRecipe recipe = holder.value();
-            ItemStack result = recipe.getResultItem(registries);
+        for (RecipeHolder<?> holder : recipes.getRecipes()) {
+            if (!(holder.value() instanceof CraftingRecipe recipe) || recipe.getType() != RecipeType.CRAFTING
+                    || !(recipe instanceof ShapedRecipe || recipe instanceof ShapelessRecipe)) {
+                continue;
+            }
+            List<Ingredient> ingredients = recipe.placementInfo().ingredients();
+            ItemStack result = getResult(recipe, ingredients);
             if (result.isEmpty() || !result.getComponentsPatch().isEmpty()) {
                 continue;
             }
-            List<Ingredient> ingredients = recipe.getIngredients().stream().filter(ingredient -> !ingredient.isEmpty()).toList();
             if (result.getCount() == 1 && isSquare(recipe, ingredients.size()) && allSame(ingredients)) {
                 compressions.computeIfAbsent(result.getItem(), item -> Lists.newArrayList())
                         .add(new Compress(ingredients.get(0), ingredients.size()));
             } else if (ingredients.size() == 1 && (result.getCount() == 4 || result.getCount() == 9)) {
-                for (ItemStack larger : ingredients.get(0).getItems()) {
-                    if (larger.getComponentsPatch().isEmpty()) {
-                        decompressions.computeIfAbsent(larger.getItem(), item -> Maps.newHashMap())
-                                .put(result.getItem(), result.getCount());
-                    }
-                }
+                ingredients.get(0).items().forEach(larger -> decompressions.computeIfAbsent(larger.value(), item -> Maps.newHashMap())
+                        .put(result.getItem(), result.getCount()));
             }
         }
         List<Conversion> conversions = Lists.newArrayList();
         compressions.forEach((larger, candidates) -> {
             Map<Item, Integer> back = decompressions.getOrDefault(larger, Map.of());
             for (Compress compress : candidates) {
-                for (ItemStack smaller : compress.ingredient().getItems()) {
-                    Integer ratio = back.get(smaller.getItem());
-                    if (ratio != null && ratio == compress.count() && smaller.getItem() != larger) {
-                        conversions.add(new Conversion(smaller.getItem(), larger, ratio));
+                compress.ingredient().items().forEach(holder -> {
+                    Item smaller = holder.value();
+                    Integer ratio = back.get(smaller);
+                    if (ratio != null && ratio == compress.count() && smaller != larger) {
+                        conversions.add(new Conversion(smaller, larger, ratio));
                     }
-                }
+                });
             }
         });
         return conversions;
+    }
+
+    /**
+     * Normal crafting recipes no longer expose their result, so craft it from one item of each ingredient.
+     */
+    private static ItemStack getResult(CraftingRecipe recipe, List<Ingredient> ingredients) {
+        if (ingredients.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        CraftingInput input;
+        if (recipe instanceof ShapedRecipe shaped) {
+            List<ItemStack> items = shaped.getIngredients().stream()
+                    .map(ingredient -> ingredient.flatMap(i -> i.items().findFirst()).map(item -> new ItemStack(item)).orElse(ItemStack.EMPTY))
+                    .toList();
+            input = CraftingInput.of(shaped.getWidth(), shaped.getHeight(), items);
+        } else {
+            List<ItemStack> items = ingredients.stream()
+                    .map(ingredient -> ingredient.items().findFirst().map(item -> new ItemStack(item)).orElse(ItemStack.EMPTY))
+                    .toList();
+            input = CraftingInput.of(items.size(), 1, items);
+        }
+        return recipe.assemble(input);
     }
 
     /**
@@ -146,7 +167,7 @@ public final class CompressionDiscovery {
                 return false;
             }
         }
-        return first.getItems().length > 0;
+        return first.items().findAny().isPresent();
     }
 
     private record Compress(Ingredient ingredient, int count) {

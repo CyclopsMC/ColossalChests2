@@ -64,7 +64,7 @@ public final class MagnetWall {
                 // Only items the chest takes are pulled, so the rest does not pile up against the wall.
                 Vec3 pull = center.subtract(item.position()).normalize().scale(PULL_SPEED);
                 item.setDeltaMovement(pull.add(0, LIFT, 0));
-                item.hasImpulse = true;
+                item.needsSync = true;
             }
         }
     }

@@ -7,15 +7,9 @@
     "IDI"
   ],
   "key": {
-    "I": {
-      "item": "minecraft:iron_ingot"
-    },
-    "D": {
-      "item": "minecraft:diamond"
-    },
-    "C": {
-      "tag": "colossalchests2:chest_walls"
-    }
+    "I": "minecraft:iron_ingot",
+    "D": "minecraft:diamond",
+    "C": "#colossalchests2:chest_walls"
   },
   "result": {
     "id": "colossalchests2:upgrade_depth",

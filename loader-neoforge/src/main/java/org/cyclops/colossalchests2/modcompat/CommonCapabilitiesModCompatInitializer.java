@@ -1,6 +1,7 @@
 package org.cyclops.colossalchests2.modcompat;
 
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import org.cyclops.cyclopscore.init.IModBase;
 import org.cyclops.colossalchests2.ColossalChests;
 import org.cyclops.colossalchests2.RegistryEntries;
 import org.cyclops.commoncapabilities.api.capability.Capabilities;
@@ -15,7 +16,7 @@ import org.cyclops.cyclopscore.modcompat.ICompatInitializer;
 public class CommonCapabilitiesModCompatInitializer implements ICompatInitializer {
 
     @Override
-    public void initialize() {
+    public void initialize(IModBase mod) {
         ColossalChests._instance.getModEventBus().addListener(this::registerCapabilities);
     }
 

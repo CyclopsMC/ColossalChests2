@@ -1,7 +1,7 @@
 package org.cyclops.colossalchests2.upgrade;
 
 import com.google.common.collect.Sets;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.cyclops.colossalchests2.GeneralConfig;
 import org.cyclops.colossalchests2.api.upgrade.ChestUpgrade;
 import org.cyclops.colossalchests2.storage.CapacityProfile;
@@ -46,7 +46,7 @@ public final class ChestUpgradeRules {
      * @param material The chest material id.
      * @return How many of the upgrade a chest of that material takes.
      */
-    public static int getMaxCount(ChestUpgrade upgrade, ResourceLocation material) {
+    public static int getMaxCount(ChestUpgrade upgrade, Identifier material) {
         return UpgradeSet.getMaxCount(upgrade, material, GeneralConfig.getBaseSlots(), GeneralConfig.getMaxSlots());
     }
 
@@ -56,7 +56,7 @@ public final class ChestUpgradeRules {
      * @param material The chest material id.
      * @return If the chest takes one more of the upgrade.
      */
-    public static boolean canAdd(UpgradeSet upgrades, ChestUpgrade upgrade, ResourceLocation material) {
+    public static boolean canAdd(UpgradeSet upgrades, ChestUpgrade upgrade, Identifier material) {
         return upgrades.count(upgrade) < getMaxCount(upgrade, material);
     }
 

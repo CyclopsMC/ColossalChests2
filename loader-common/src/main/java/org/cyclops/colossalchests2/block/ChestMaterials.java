@@ -3,7 +3,7 @@ package org.cyclops.colossalchests2.block;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.cyclops.colossalchests2.Reference;
 import org.cyclops.colossalchests2.api.ChestMaterial;
 import org.cyclops.colossalchests2.config.ChestTables;
@@ -52,12 +52,12 @@ public final class ChestMaterials {
      *         Materials after the same one are ordered by id. Materials after none, after one that does not exist,
      *         or in a loop come last, by id.
      */
-    public static List<ChestMaterial> order(List<ChestMaterial> materials, Function<ChestMaterial, ResourceLocation> after) {
-        Set<ResourceLocation> ids = materials.stream().map(ChestMaterial::id).collect(Collectors.toSet());
-        Map<ResourceLocation, List<ChestMaterial>> children = Maps.newHashMap();
+    public static List<ChestMaterial> order(List<ChestMaterial> materials, Function<ChestMaterial, Identifier> after) {
+        Set<Identifier> ids = materials.stream().map(ChestMaterial::id).collect(Collectors.toSet());
+        Map<Identifier, List<ChestMaterial>> children = Maps.newHashMap();
         List<ChestMaterial> roots = Lists.newArrayList();
         for (ChestMaterial material : materials) {
-            ResourceLocation anchor = after.apply(material);
+            Identifier anchor = after.apply(material);
             if (anchor != null && ids.contains(anchor)) {
                 children.computeIfAbsent(anchor, id -> Lists.newArrayList()).add(material);
             } else {

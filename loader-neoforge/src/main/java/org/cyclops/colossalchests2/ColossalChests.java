@@ -6,12 +6,10 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.apache.logging.log4j.Level;
@@ -21,7 +19,7 @@ import org.cyclops.colossalchests2.api.upgrade.ChestUpgrade;
 import org.cyclops.colossalchests2.block.BlockChestCoreConfig;
 import org.cyclops.colossalchests2.block.BlockChestFunctionalWallConfig;
 import org.cyclops.colossalchests2.block.BlockChestWallConfig;
-import org.cyclops.colossalchests2.block.BlockUncolossalChestConfigNeoForge;
+import org.cyclops.colossalchests2.block.BlockUncolossalChestConfig;
 import org.cyclops.colossalchests2.block.BuiltInMaterial;
 import org.cyclops.colossalchests2.block.DisplayWallInteractions;
 import org.cyclops.colossalchests2.block.WallType;
@@ -34,6 +32,8 @@ import org.cyclops.colossalchests2.component.DataComponentChestUpgradesConfig;
 import org.cyclops.colossalchests2.component.DataComponentMaterialTargetConfig;
 import org.cyclops.colossalchests2.config.ChestTablesReloadListener;
 import org.cyclops.colossalchests2.gametest.GameTestAddon;
+import org.cyclops.colossalchests2.gametest.GameTestsCapabilitiesNeoForge;
+import org.cyclops.colossalchests2.gametest.GameTestsCommon;
 import org.cyclops.colossalchests2.inventory.ContainerChestConfig;
 import org.cyclops.colossalchests2.inventory.ContainerDisplayConfig;
 import org.cyclops.colossalchests2.inventory.ContainerInterfaceConfig;
@@ -48,7 +48,7 @@ import org.cyclops.colossalchests2.proxy.CommonProxy;
 import org.cyclops.colossalchests2.upgrade.ChestUpgrades;
 import org.cyclops.colossalchests2.upgrade.ItemChestUpgradeConfig;
 import org.cyclops.cyclopscore.config.ConfigHandlerCommon;
-import org.cyclops.cyclopscore.init.ModBaseVersionable;
+import org.cyclops.cyclopscore.init.ModBaseNeoForge;
 import org.cyclops.cyclopscore.modcompat.ModCompatLoader;
 import org.cyclops.cyclopscore.proxy.IClientProxy;
 import org.cyclops.cyclopscore.proxy.ICommonProxy;
@@ -59,7 +59,7 @@ import org.cyclops.cyclopscore.proxy.ICommonProxy;
  *
  */
 @Mod(Reference.MOD_ID)
-public class ColossalChests extends ModBaseVersionable<ColossalChests> {
+public class ColossalChests extends ModBaseNeoForge<ColossalChests> {
 
     /**
      * The unique instance of this mod.
@@ -71,7 +71,7 @@ public class ColossalChests extends ModBaseVersionable<ColossalChests> {
             ColossalChestsInstance.MOD = instance;
             _instance = instance;
         }, modEventBus);
-        NeoForge.EVENT_BUS.addListener((AddReloadListenerEvent event) -> event.addListener(new ChestTablesReloadListener()));
+        NeoForge.EVENT_BUS.addListener((AddServerReloadListenersEvent event) -> event.addListener(ChestTablesReloadListener.ID, new ChestTablesReloadListener()));
         NeoForge.EVENT_BUS.addListener((OnDatapackSyncEvent event) -> event.getRelevantPlayers().forEach(ChestNetwork::sendTables));
         NeoForge.EVENT_BUS.addListener((PlayerInteractEvent.LeftClickBlock event) -> {
             if (DisplayWallInteractions.onAttack(event.getEntity(), event.getLevel(), event.getPos(), event.getFace())) {
@@ -86,7 +86,6 @@ public class ColossalChests extends ModBaseVersionable<ColossalChests> {
     }
 
     @Override
-    @OnlyIn(Dist.CLIENT)
     protected IClientProxy constructClientProxy() {
         return new ClientProxy();
     }
@@ -140,13 +139,18 @@ public class ColossalChests extends ModBaseVersionable<ColossalChests> {
         }
         configHandler.addConfigurable(new BlockEntityChestCoreConfigNeoForge<>(this));
         configHandler.addConfigurable(new BlockEntityChestWallConfigNeoForge<>(this));
-        configHandler.addConfigurable(new BlockUncolossalChestConfigNeoForge<>(this));
+        configHandler.addConfigurable(new BlockUncolossalChestConfig<>(this));
         configHandler.addConfigurable(new BlockEntityUncolossalChestConfigNeoForge<>(this));
         configHandler.addConfigurable(new ContainerInterfaceConfig<>(this));
         configHandler.addConfigurable(new ContainerDisplayConfig<>(this));
         configHandler.addConfigurable(new ContainerRedstoneConfig<>(this));
         configHandler.addConfigurable(new ContainerMagnetConfig<>(this));
         configHandler.addConfigurable(new ContainerMaterialUpgradeToolConfig<>(this));
+    }
+
+    @Override
+    public Class<?>[] getGameTestClasses() {
+        return new Class<?>[] { GameTestsCommon.class, GameTestsCapabilitiesNeoForge.class };
     }
 
     /**

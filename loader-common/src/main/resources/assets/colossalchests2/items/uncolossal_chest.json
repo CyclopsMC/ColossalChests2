@@ -1,0 +1,10 @@
+{
+  "model": {
+    "type": "minecraft:special",
+    "base": "colossalchests2:item/uncolossal_chest",
+    "model": {
+      "type": "minecraft:chest",
+      "texture": "minecraft:normal"
+    }
+  }
+}

@@ -6,7 +6,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
@@ -65,7 +64,7 @@ public class BlockChestFunctionalWall extends BlockChestWall implements EntityBl
             if (player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof BlockEntityChestWall wall) {
                 IModHelpers.get().getMinecraftHelpers().openMenu(serverPlayer, wall, buf -> buf.writeBlockPos(pos));
             }
-            return InteractionResult.sidedSuccess(level.isClientSide);
+            return InteractionResult.SUCCESS;
         }
         if (type == WallType.DISPLAY && level.getBlockEntity(pos) instanceof BlockEntityChestWall wall) {
             InteractionResult result = DisplayWallInteractions.useWithoutItem(player, wall, hit.getDirection());
@@ -77,10 +76,10 @@ public class BlockChestFunctionalWall extends BlockChestWall implements EntityBl
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (type == WallType.DISPLAY && !(stack.getItem() instanceof ItemMaterialUpgradeTool)
                 && level.getBlockEntity(pos) instanceof BlockEntityChestWall wall) {
-            ItemInteractionResult result = DisplayWallInteractions.useItemOn(stack, player, wall, hit.getDirection());
+            InteractionResult result = DisplayWallInteractions.useItemOn(stack, player, wall, hit.getDirection());
             if (result != null) {
                 return result;
             }
@@ -94,7 +93,7 @@ public class BlockChestFunctionalWall extends BlockChestWall implements EntityBl
     }
 
     @Override
-    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
         return level.getBlockEntity(pos) instanceof BlockEntityChestWall wall ? wall.getComparatorSignal() : 0;
     }
 
@@ -115,7 +114,7 @@ public class BlockChestFunctionalWall extends BlockChestWall implements EntityBl
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
-        if (level.isClientSide || blockEntityType != RegistryEntries.BLOCK_ENTITY_CHEST_WALL.value()) {
+        if (level.isClientSide() || blockEntityType != RegistryEntries.BLOCK_ENTITY_CHEST_WALL.value()) {
             return null;
         }
         return switch (type) {

@@ -3,11 +3,10 @@ package org.cyclops.colossalchests2.block;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -18,7 +17,6 @@ import org.cyclops.colossalchests2.material.ItemMaterialUpgradeTool;
 import org.cyclops.colossalchests2.multiblock.ChestCoreIndex;
 import org.cyclops.colossalchests2.multiblock.LevelStructureView;
 import org.cyclops.colossalchests2.multiblock.StructureDiagnosis;
-import org.joml.Vector3f;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +31,7 @@ public final class ChestInteractions {
      * Highlighted problem positions, so huge chests do not flood the client with particles.
      */
     public static final int MAX_HIGHLIGHTS = 64;
-    private static final DustParticleOptions HIGHLIGHT = new DustParticleOptions(new Vector3f(1.0F, 0.1F, 0.1F), 2.0F);
+    private static final DustParticleOptions HIGHLIGHT = new DustParticleOptions(0xFF1A1A, 2.0F);
 
     private ChestInteractions() {
     }
@@ -42,10 +40,10 @@ public final class ChestInteractions {
      * With an item in hand, an unformed chest lets the item be used, so walls can be placed against walls
      * while building. A formed chest still opens, like a vanilla chest, unless a Material Upgrade is used on it.
      */
-    public static ItemInteractionResult useItemOn(ItemStack stack, BlockState state) {
+    public static InteractionResult useItemOn(ItemStack stack, BlockState state) {
         return !stack.isEmpty() && (!state.getValue(BlockChestCore.FORMED) || stack.getItem() instanceof ItemMaterialUpgradeTool)
-                ? ItemInteractionResult.SKIP_DEFAULT_BLOCK_INTERACTION
-                : ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+                ? InteractionResult.PASS
+                : InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
     public static InteractionResult use(BlockState state, Level level, BlockPos pos, Player player) {
@@ -80,11 +78,11 @@ public final class ChestInteractions {
      */
     public static StructureDiagnosis.Result explain(ServerPlayer player, ServerLevel level, BlockPos pos) {
         StructureDiagnosis.Result result = StructureDiagnosis.diagnose(new LevelStructureView(level, pos), pos,
-                material -> ChestTablesLoader.get().getMaterial((ResourceLocation) material).maxSize());
-        player.displayClientMessage(getMessage(result), true);
+                material -> ChestTablesLoader.get().getMaterial((Identifier) material).maxSize());
+        player.sendOverlayMessage(getMessage(result));
         List<BlockPos> positions = result.getProblemPositions();
         for (BlockPos problem : positions.subList(0, Math.min(positions.size(), MAX_HIGHLIGHTS))) {
-            level.sendParticles(player, HIGHLIGHT, true, problem.getX() + 0.5, problem.getY() + 0.5, problem.getZ() + 0.5,
+            level.sendParticles(player, HIGHLIGHT, true, false, problem.getX() + 0.5, problem.getY() + 0.5, problem.getZ() + 0.5,
                     8, 0.3, 0.3, 0.3, 0);
         }
         return result;

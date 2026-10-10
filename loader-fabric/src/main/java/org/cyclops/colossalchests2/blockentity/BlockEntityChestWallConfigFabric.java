@@ -14,8 +14,8 @@ public class BlockEntityChestWallConfigFabric<M extends ModBaseFabric<?>> extend
     }
 
     @Override
-    public void onForgeRegistered() {
-        super.onForgeRegistered();
+    public void onRegistryRegistered() {
+        super.onRegistryRegistered();
         ItemStorage.SIDED.registerForBlockEntity((wall, side) -> wall.getExposedCore()
                 .map(core -> ((BlockEntityChestCoreFabric) core).getFabricStorage().withAccess(wall.getAccess()))
                 .orElse(null), getInstance());

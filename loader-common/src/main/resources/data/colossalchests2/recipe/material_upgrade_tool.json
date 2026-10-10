@@ -2,15 +2,9 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    {
-      "item": "minecraft:stick"
-    },
-    {
-      "tag": "colossalchests2:chest_walls"
-    },
-    {
-      "item": "minecraft:stick"
-    }
+    "minecraft:stick",
+    "#colossalchests2:chest_walls",
+    "minecraft:stick"
   ],
   "result": {
     "id": "colossalchests2:material_upgrade_tool",

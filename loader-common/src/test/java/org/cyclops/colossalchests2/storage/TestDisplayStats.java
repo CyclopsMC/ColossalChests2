@@ -1,5 +1,7 @@
 package org.cyclops.colossalchests2.storage;
 
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.junit.Before;
@@ -76,8 +78,9 @@ public class TestDisplayStats extends BootstrapTest {
     }
 
     @Test
-    public void testTagRoundTrip() {
+    public void testCodecRoundTrip() {
         DisplayStats stats = new DisplayStats(123456789012L, 99, true, false, true);
-        assertEquals(stats, DisplayStats.fromTag(stats.toTag()));
+        Tag tag = DisplayStats.CODEC.encodeStart(NbtOps.INSTANCE, stats).getOrThrow();
+        assertEquals(stats, DisplayStats.CODEC.parse(NbtOps.INSTANCE, tag).getOrThrow());
     }
 }

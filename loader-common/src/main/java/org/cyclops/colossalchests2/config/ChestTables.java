@@ -1,7 +1,7 @@
 package org.cyclops.colossalchests2.config;
 
 import com.google.common.collect.ImmutableMap;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.cyclops.colossalchests2.api.MaterialProperties;
 import org.cyclops.colossalchests2.api.UpgradeProperties;
 
@@ -20,7 +20,7 @@ import java.util.Map;
  * @param upgrades Upgrade properties by upgrade id, only from data files.
  * @author rubensworks
  */
-public record ChestTables(Map<ResourceLocation, MaterialProperties> materials, Map<ResourceLocation, UpgradeProperties> upgrades) {
+public record ChestTables(Map<Identifier, MaterialProperties> materials, Map<Identifier, UpgradeProperties> upgrades) {
 
     public ChestTables {
         materials = ImmutableMap.copyOf(materials);
@@ -36,7 +36,7 @@ public record ChestTables(Map<ResourceLocation, MaterialProperties> materials, M
      * @param material A material id.
      * @return The properties of the material, or the defaults if no file defines it.
      */
-    public MaterialProperties getMaterial(ResourceLocation material) {
+    public MaterialProperties getMaterial(Identifier material) {
         return materials.getOrDefault(material, MaterialProperties.DEFAULT);
     }
 
@@ -46,7 +46,7 @@ public record ChestTables(Map<ResourceLocation, MaterialProperties> materials, M
      * @param material A material id.
      * @return How many of the upgrade a chest of the material takes.
      */
-    public int getMaxUpgradeCount(ResourceLocation upgrade, ResourceLocation material) {
+    public int getMaxUpgradeCount(Identifier upgrade, Identifier material) {
         UpgradeProperties properties = getUpgrade(upgrade);
         Integer limit = properties.maxCountByMaterial().get(material);
         if (limit == null) {
@@ -59,7 +59,7 @@ public record ChestTables(Map<ResourceLocation, MaterialProperties> materials, M
      * @param upgrade An upgrade id.
      * @return The properties of the upgrade, or disabled if no file defines it.
      */
-    public UpgradeProperties getUpgrade(ResourceLocation upgrade) {
+    public UpgradeProperties getUpgrade(Identifier upgrade) {
         return upgrades.getOrDefault(upgrade, UpgradeProperties.DISABLED);
     }
 

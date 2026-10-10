@@ -1,5 +1,10 @@
 package org.cyclops.colossalchests2.blockentity;
 
+import net.minecraft.core.component.DataComponentGetter;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -8,13 +13,11 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -192,7 +195,7 @@ public class BlockEntityChestCore extends BlockEntity implements MenuProvider, C
      * @return The material id of this core, or null if the block is not a core.
      */
     @Nullable
-    public ResourceLocation getMaterialId() {
+    public Identifier getMaterialId() {
         ChestMaterial material = getChestMaterial();
         return material == null ? null : material.id();
     }
@@ -206,13 +209,13 @@ public class BlockEntityChestCore extends BlockEntity implements MenuProvider, C
      * @return How many of the upgrade this chest takes.
      */
     public int getMaxUpgradeCount(ChestUpgrade upgrade) {
-        ResourceLocation material = getMaterialId();
+        Identifier material = getMaterialId();
         return material == null ? 0 : ChestUpgradeRules.getMaxCount(upgrade, material);
     }
 
     @Override
     public boolean canAddUpgrade(int slot, ChestUpgrade upgrade) {
-        ResourceLocation material = getMaterialId();
+        Identifier material = getMaterialId();
         return material != null && slot < getMaterialProperties(getBlockState()).upgradeSlots()
                 && ChestUpgradeRules.canAdd(getUpgradeSet(), upgrade, material);
     }
@@ -646,9 +649,15 @@ public class BlockEntityChestCore extends BlockEntity implements MenuProvider, C
     }
 
     @Override
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        super.preRemoveSideEffects(pos, state);
+        dissolve();
+    }
+
+    @Override
     public void setRemoved() {
         super.setRemoved();
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             ChestCoreIndex.unregister(level, worldPosition);
         }
         registered = false;
@@ -656,21 +665,20 @@ public class BlockEntityChestCore extends BlockEntity implements MenuProvider, C
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        tag.putInt("data_version", DATA_VERSION);
-        tag.put("storage", ChestStorage.CODEC.encodeStart(registries.createSerializationContext(NbtOps.INSTANCE), storage.toContents()).getOrThrow());
-        saveStructure(tag);
-        tag.put("upgrades", ItemContainerContents.CODEC.encodeStart(registries.createSerializationContext(NbtOps.INSTANCE),
-                ItemContainerContents.fromItems(upgrades.getItems())).getOrThrow());
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        output.putInt("data_version", DATA_VERSION);
+        output.store("storage", ChestStorage.CODEC, storage.toContents());
+        saveStructure(output);
+        output.store("upgrades", ItemContainerContents.CODEC, ItemContainerContents.fromItems(upgrades.getItems()));
     }
 
-    private void saveStructure(CompoundTag tag) {
+    private void saveStructure(ValueOutput output) {
         if (structure != null) {
-            tag.put("structure", ChestStructure.CODEC.encodeStart(NbtOps.INSTANCE, structure).getOrThrow());
-            tag.put("decorated", BlockPos.CODEC.listOf().encodeStart(NbtOps.INSTANCE, decoratedPositions).getOrThrow());
+            output.store("structure", ChestStructure.CODEC, structure);
+            output.store("decorated", BlockPos.CODEC.listOf(), decoratedPositions);
         }
-        tag.putInt("last_size", lastSize);
+        output.putInt("last_size", lastSize);
     }
 
     /**
@@ -678,9 +686,9 @@ public class BlockEntityChestCore extends BlockEntity implements MenuProvider, C
      */
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        CompoundTag tag = new CompoundTag();
-        saveStructure(tag);
-        return tag;
+        TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registries);
+        saveStructure(output);
+        return output.buildResult();
     }
 
     @Override
@@ -689,25 +697,15 @@ public class BlockEntityChestCore extends BlockEntity implements MenuProvider, C
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        if (tag.contains("upgrades")) {
-            ItemContainerContents.CODEC.parse(registries.createSerializationContext(NbtOps.INSTANCE), tag.get("upgrades"))
-                    .resultOrPartial(error -> ColossalChestsInstance.MOD.log(org.apache.logging.log4j.Level.ERROR,
-                            "Could not load chest core upgrades at " + worldPosition + ": " + error))
-                    .ifPresent(this::loadUpgrades);
-        }
-        if (tag.contains("storage")) {
-            ChestStorage.CODEC.parse(registries.createSerializationContext(NbtOps.INSTANCE), tag.get("storage"))
-                    .resultOrPartial(error -> ColossalChestsInstance.MOD.log(org.apache.logging.log4j.Level.ERROR,
-                            "Could not load chest core contents at " + worldPosition + ": " + error))
-                    .ifPresent(storage::loadContents);
-        }
-        structure = tag.contains("structure") ? ChestStructure.CODEC.parse(NbtOps.INSTANCE, tag.get("structure")).result().orElse(null) : null;
-        decoratedPositions = structure != null && tag.contains("decorated", Tag.TAG_LIST)
-                ? BlockPos.CODEC.listOf().parse(NbtOps.INSTANCE, tag.get("decorated")).result().map(ImmutableList::copyOf).orElse(ImmutableList.of())
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        input.read("upgrades", ItemContainerContents.CODEC).ifPresent(this::loadUpgrades);
+        input.read("storage", ChestStorage.CODEC).ifPresent(storage::loadContents);
+        structure = input.read("structure", ChestStructure.CODEC).orElse(null);
+        decoratedPositions = structure != null
+                ? input.read("decorated", BlockPos.CODEC.listOf()).map(ImmutableList::copyOf).orElse(ImmutableList.of())
                 : List.of();
-        lastSize = tag.getInt("last_size");
+        lastSize = input.getIntOr("last_size", 0);
         applyProfile(true);
     }
 
@@ -724,7 +722,7 @@ public class BlockEntityChestCore extends BlockEntity implements MenuProvider, C
     }
 
     @Override
-    protected void applyImplicitComponents(DataComponentInput input) {
+    protected void applyImplicitComponents(DataComponentGetter input) {
         super.applyImplicitComponents(input);
         loadUpgrades(input.getOrDefault(RegistryEntries.COMPONENT_CHEST_UPGRADES.value(), ItemContainerContents.EMPTY));
         ChestStorage.Contents contents = input.get(RegistryEntries.COMPONENT_CHEST_CONTENTS.value());
@@ -735,15 +733,15 @@ public class BlockEntityChestCore extends BlockEntity implements MenuProvider, C
     }
 
     @Override
-    public void removeComponentsFromTag(CompoundTag tag) {
-        super.removeComponentsFromTag(tag);
-        tag.remove("storage");
-        tag.remove("upgrades");
+    public void removeComponentsFromTag(ValueOutput output) {
+        super.removeComponentsFromTag(output);
+        output.discard("storage");
+        output.discard("upgrades");
     }
 
     private void loadUpgrades(ItemContainerContents contents) {
         loadingUpgrades = true;
-        upgrades.load(contents.stream().toList());
+        upgrades.load(contents.allItemsCopyStream().toList());
         upgrades.resize(getMaterialProperties(getBlockState()).upgradeSlots());
         loadingUpgrades = false;
         updateCompression();
