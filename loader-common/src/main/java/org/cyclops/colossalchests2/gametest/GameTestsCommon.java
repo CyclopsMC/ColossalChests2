@@ -1422,6 +1422,8 @@ public class GameTestsCommon {
 
     private static ServerPlayer makePlayerNorthOf(GameTestHelper helper, BlockPos corePos) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        // Block breaking follows the server's default game mode, which is survival outside the game test server.
+        player.gameMode.changeGameModeForPlayer(GameType.CREATIVE);
         BlockPos absolute = helper.absolutePos(corePos);
         player.snapTo(absolute.getX() + 0.5, absolute.getY(), absolute.getZ() - 2.5, 0, 0);
         return player;
@@ -2749,7 +2751,7 @@ public class GameTestsCommon {
      * Like {@link GameTestHelper#makeMockServerPlayerInLevel()}, but the packets it receives can be read from the channel.
      */
     private static ListeningPlayer makeListeningPlayer(GameTestHelper helper) {
-        CommonListenerCookie cookie = CommonListenerCookie.createInitial(new GameProfile(UUID.randomUUID(), "test-sound-player"), false);
+        CommonListenerCookie cookie = CommonListenerCookie.createInitial(new GameProfile(UUID.randomUUID(), "test-mock-player"), false);
         ServerPlayer player = new ServerPlayer(helper.getLevel().getServer(), helper.getLevel(), cookie.gameProfile(), cookie.clientInformation());
         Connection connection = new Connection(PacketFlow.SERVERBOUND);
         EmbeddedChannel channel = new EmbeddedChannel(connection);
