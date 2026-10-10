@@ -2751,7 +2751,6 @@ public class GameTestsCommon {
      * Like {@link GameTestHelper#makeMockServerPlayerInLevel()}, but the packets it receives can be read from the channel.
      */
     private static ListeningPlayer makeListeningPlayer(GameTestHelper helper) {
-        // Cyclops Core sends no mod packets to this name, as this connection did not negotiate any channels.
         CommonListenerCookie cookie = CommonListenerCookie.createInitial(new GameProfile(UUID.randomUUID(), "test-mock-player"), false);
         ServerPlayer player = new ServerPlayer(helper.getLevel().getServer(), helper.getLevel(), cookie.gameProfile(), cookie.clientInformation());
         Connection connection = new Connection(PacketFlow.SERVERBOUND);
