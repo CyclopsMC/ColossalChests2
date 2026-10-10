@@ -6,18 +6,18 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.OnDatapackSyncEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.cyclops.colossalchests2.advancement.ChestFormedTriggerConfig;
 import org.cyclops.colossalchests2.advancement.MaterialChangedTriggerConfig;
 import org.cyclops.colossalchests2.api.upgrade.ChestUpgrade;
 import org.cyclops.colossalchests2.block.BlockChestCoreConfig;
 import org.cyclops.colossalchests2.block.BlockChestFunctionalWallConfig;
 import org.cyclops.colossalchests2.block.BlockChestWallConfig;
-import org.cyclops.colossalchests2.block.BlockUncolossalChestConfigForge;
+import org.cyclops.colossalchests2.block.BlockUncolossalChestConfig;
 import org.cyclops.colossalchests2.block.BuiltInMaterial;
 import org.cyclops.colossalchests2.block.DisplayWallInteractions;
 import org.cyclops.colossalchests2.block.WallType;
@@ -31,6 +31,8 @@ import org.cyclops.colossalchests2.component.DataComponentChestUpgradesConfig;
 import org.cyclops.colossalchests2.component.DataComponentMaterialTargetConfig;
 import org.cyclops.colossalchests2.config.ChestTablesReloadListener;
 import org.cyclops.colossalchests2.gametest.GameTestAddon;
+import org.cyclops.colossalchests2.gametest.GameTestsCapabilitiesForge;
+import org.cyclops.colossalchests2.gametest.GameTestsCommon;
 import org.cyclops.colossalchests2.inventory.ContainerChestConfig;
 import org.cyclops.colossalchests2.inventory.ContainerDisplayConfig;
 import org.cyclops.colossalchests2.inventory.ContainerInterfaceConfig;
@@ -61,18 +63,15 @@ public class ColossalChestsForge extends ModBaseForge<ColossalChestsForge> {
      */
     public static ColossalChestsForge _instance;
 
-    public ColossalChestsForge() {
+    public ColossalChestsForge(FMLJavaModLoadingContext context) {
         super(Reference.MOD_ID, (instance) -> {
             _instance = instance;
             ColossalChestsInstance.MOD = instance;
-        });
-        MinecraftForge.EVENT_BUS.addListener((AddReloadListenerEvent event) -> event.addListener(new ChestTablesReloadListener()));
-        MinecraftForge.EVENT_BUS.addListener((OnDatapackSyncEvent event) -> event.getPlayers().forEach(ChestNetwork::sendTables));
-        MinecraftForge.EVENT_BUS.addListener((PlayerInteractEvent.LeftClickBlock event) -> {
-            if (DisplayWallInteractions.onAttack(event.getEntity(), event.getLevel(), event.getPos(), event.getFace())) {
-                event.setCanceled(true);
-            }
-        });
+        }, context);
+        AddReloadListenerEvent.BUS.addListener(event -> event.addListener(new ChestTablesReloadListener()));
+        OnDatapackSyncEvent.BUS.addListener(event -> event.getPlayers().forEach(ChestNetwork::sendTables));
+        PlayerInteractEvent.LeftClickBlock.BUS.addListener((PlayerInteractEvent.LeftClickBlock event) ->
+                DisplayWallInteractions.onAttack(event.getEntity(), event.getLevel(), event.getPos(), event.getFace()));
     }
 
     @Override
@@ -134,12 +133,17 @@ public class ColossalChestsForge extends ModBaseForge<ColossalChestsForge> {
         }
         configHandler.addConfigurable(new BlockEntityChestCoreConfigForge<>(this));
         configHandler.addConfigurable(new BlockEntityChestWallConfigForge<>(this));
-        configHandler.addConfigurable(new BlockUncolossalChestConfigForge<>(this));
+        configHandler.addConfigurable(new BlockUncolossalChestConfig<>(this));
         configHandler.addConfigurable(new BlockEntityUncolossalChestConfig<>(this, BlockEntityUncolossalChestForge::new));
         configHandler.addConfigurable(new ContainerInterfaceConfig<>(this));
         configHandler.addConfigurable(new ContainerDisplayConfig<>(this));
         configHandler.addConfigurable(new ContainerRedstoneConfig<>(this));
         configHandler.addConfigurable(new ContainerMagnetConfig<>(this));
         configHandler.addConfigurable(new ContainerMaterialUpgradeToolConfig<>(this));
+    }
+
+    @Override
+    public Class<?>[] getGameTestClasses() {
+        return new Class<?>[] { GameTestsCommon.class, GameTestsCapabilitiesForge.class };
     }
 }

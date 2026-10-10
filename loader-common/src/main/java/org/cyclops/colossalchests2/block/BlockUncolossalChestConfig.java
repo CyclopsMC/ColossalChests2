@@ -3,7 +3,6 @@ package org.cyclops.colossalchests2.block;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
-import net.minecraft.world.level.block.state.BlockBehaviour;
 import org.cyclops.cyclopscore.config.extendedconfig.BlockConfigCommon;
 import org.cyclops.cyclopscore.init.IModBase;
 
@@ -26,7 +25,7 @@ public class BlockUncolossalChestConfig<M extends IModBase> extends BlockConfigC
         super(
                 mod,
                 "uncolossal_chest",
-                eConfig -> new BlockUncolossalChest(BlockBehaviour.Properties.of()
+                (eConfig, props) -> new BlockUncolossalChest(props
                         .strength(5.0F)
                         .requiresCorrectToolForDrops()
                         .sound(SoundType.WOOD)),

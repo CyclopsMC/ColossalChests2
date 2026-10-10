@@ -84,11 +84,15 @@ public final class ChestBuilder {
         for (BlockPos pos : BlockPos.betweenClosed(structure.min(), structure.max())) {
             BlockState state = structure.isOnShell(pos) ? material.getWallBlock().defaultBlockState() : Blocks.AIR.defaultBlockState();
             if (!pos.equals(corePos) && level.getBlockState(pos) != state) {
-                Clearable.tryClear(level.getBlockEntity(pos));
+                if (level.getBlockEntity(pos) instanceof Clearable clearable) {
+                    clearable.clearContent();
+                }
                 level.setBlock(pos, state, Block.UPDATE_ALL);
             }
         }
-        Clearable.tryClear(level.getBlockEntity(corePos));
+        if (level.getBlockEntity(corePos) instanceof Clearable clearable) {
+            clearable.clearContent();
+        }
         level.setBlock(corePos, material.getCoreBlock().defaultBlockState(), Block.UPDATE_ALL);
         if (level.getBlockEntity(corePos) instanceof BlockEntityChestCore core) {
             core.validateNow();

@@ -4,7 +4,7 @@ import net.minecraft.world.flag.FeatureFlags;
 import org.cyclops.cyclopscore.config.extendedconfig.GuiConfigCommon;
 import org.cyclops.cyclopscore.config.extendedconfig.GuiConfigScreenFactoryProvider;
 import org.cyclops.cyclopscore.init.IModBase;
-import org.cyclops.cyclopscore.inventory.container.ContainerTypeDataCommon;
+import org.cyclops.cyclopscore.inventory.container.ContainerTypeData;
 
 /**
  * Config for {@link ContainerMagnet}.
@@ -13,7 +13,7 @@ import org.cyclops.cyclopscore.inventory.container.ContainerTypeDataCommon;
 public class ContainerMagnetConfig<M extends IModBase> extends GuiConfigCommon<ContainerMagnet, M> {
 
     public ContainerMagnetConfig(M mod) {
-        super(mod, "magnet", eConfig -> new ContainerTypeDataCommon<>(ContainerMagnet::new, FeatureFlags.VANILLA_SET));
+        super(mod, "magnet", eConfig -> new ContainerTypeData<>(ContainerMagnet::new, FeatureFlags.VANILLA_SET));
     }
 
     @Override

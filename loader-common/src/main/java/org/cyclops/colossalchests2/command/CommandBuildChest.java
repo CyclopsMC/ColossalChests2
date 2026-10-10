@@ -10,12 +10,12 @@ import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
-import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.commands.arguments.IdentifierArgument;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import org.cyclops.colossalchests2.GeneralConfig;
 import org.cyclops.colossalchests2.api.ChestMaterial;
@@ -45,8 +45,8 @@ public final class CommandBuildChest {
 
     public static LiteralArgumentBuilder<CommandSourceStack> make() {
         return Commands.literal("build")
-                .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                .then(Commands.argument("material", ResourceLocationArgument.id())
+                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                .then(Commands.argument("material", IdentifierArgument.id())
                         .suggests((context, builder) -> SharedSuggestionProvider.suggestResource(
                                 ChestMaterial.getAll().stream().map(ChestMaterial::id), builder))
                         .then(withReplace(Commands.argument("size", IntegerArgumentType.integer(GeneralConfig.MIN_SIZE, GeneralConfig.HARD_MAX_SIZE)),
@@ -58,9 +58,9 @@ public final class CommandBuildChest {
     /**
      * @param id A material id, where a name without namespace, such as "iron", matches the material with that name.
      */
-    private static ChestMaterial getMaterial(ResourceLocation id) throws CommandSyntaxException {
+    private static ChestMaterial getMaterial(Identifier id) throws CommandSyntaxException {
         Optional<ChestMaterial> material = ChestMaterial.byId(id);
-        if (material.isEmpty() && id.getNamespace().equals(ResourceLocation.DEFAULT_NAMESPACE)) {
+        if (material.isEmpty() && id.getNamespace().equals(Identifier.DEFAULT_NAMESPACE)) {
             List<ChestMaterial> named = ChestMaterial.getAll().stream().filter(candidate -> candidate.getName().equals(id.getPath())).toList();
             material = named.size() == 1 ? Optional.of(named.getFirst()) : Optional.empty();
         }
@@ -75,7 +75,7 @@ public final class CommandBuildChest {
 
     private static int run(CommandContext<CommandSourceStack> context, BlockPos min, boolean replace) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
-        ChestMaterial material = getMaterial(ResourceLocationArgument.getId(context, "material"));
+        ChestMaterial material = getMaterial(IdentifierArgument.getId(context, "material"));
         int size = IntegerArgumentType.getInteger(context, "size");
         int maxSize = material.getProperties().maxSize();
         if (size > maxSize) {

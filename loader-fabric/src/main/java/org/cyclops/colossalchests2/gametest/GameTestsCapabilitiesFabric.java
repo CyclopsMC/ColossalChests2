@@ -1,6 +1,6 @@
 package org.cyclops.colossalchests2.gametest;
 
-import net.fabricmc.fabric.api.transfer.v1.item.InventoryStorage;
+import net.fabricmc.fabric.api.transfer.v1.item.ContainerStorage;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
@@ -9,8 +9,9 @@ import net.fabricmc.fabric.api.transfer.v1.storage.base.SingleSlotStorage;
 import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.gametest.framework.GameTest;
+import org.cyclops.cyclopscore.gametest.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.ItemStack;
@@ -42,7 +43,7 @@ public class GameTestsCapabilitiesFabric {
             container.setItem(i, new ItemStack(Items.STONE, 64));
         }
 
-        long moved = StorageUtil.move(InventoryStorage.of(container, null), new ChestStorageFabric(storage), variant -> true, Long.MAX_VALUE, null);
+        long moved = StorageUtil.move(ContainerStorage.of(container, null), new ChestStorageFabric(storage), variant -> true, Long.MAX_VALUE, null);
 
         helper.assertValueEqual(moved, 320L, "moved count");
         helper.assertValueEqual(storage.getSlot(0).getCount(), 256L, "slot 0 count");
@@ -57,7 +58,7 @@ public class GameTestsCapabilitiesFabric {
         storage.insert(0, new ItemStack(Items.STONE), 200, false);
         SimpleContainer container = new SimpleContainer(27);
 
-        long moved = StorageUtil.move(new ChestStorageFabric(storage), InventoryStorage.of(container, null), variant -> true, Long.MAX_VALUE, null);
+        long moved = StorageUtil.move(new ChestStorageFabric(storage), ContainerStorage.of(container, null), variant -> true, Long.MAX_VALUE, null);
 
         helper.assertValueEqual(moved, 200L, "moved count");
         helper.assertTrue(storage.getSlot(0).isEmpty(), "Expected the chest slot to be empty");
@@ -208,7 +209,7 @@ public class GameTestsCapabilitiesFabric {
             helper.assertValueEqual(storage.insert(ItemVariant.of(Items.STONE), 400, transaction), 320L, "inserted into 5 slots");
             transaction.commit();
         }
-        helper.assertValueEqual(((Container) helper.getBlockEntity(pos)).getItem(4).getCount(), 64, "last slot count");
+        helper.assertValueEqual(((Container) helper.getBlockEntity(pos, BlockEntity.class)).getItem(4).getCount(), 64, "last slot count");
         helper.succeed();
     }
 

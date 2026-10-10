@@ -1,6 +1,7 @@
 package org.cyclops.colossalchests2.storage;
 
-import net.minecraft.nbt.CompoundTag;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -15,6 +16,13 @@ import net.minecraft.world.item.ItemStack;
 public record DisplayStats(long count, long capacity, boolean locked, boolean voided, boolean compressed) {
 
     public static final DisplayStats EMPTY = new DisplayStats(0, 0, false, false, false);
+    public static final Codec<DisplayStats> CODEC = RecordCodecBuilder.create(builder -> builder.group(
+            Codec.LONG.optionalFieldOf("count", 0L).forGetter(DisplayStats::count),
+            Codec.LONG.optionalFieldOf("capacity", 0L).forGetter(DisplayStats::capacity),
+            Codec.BOOL.optionalFieldOf("locked", false).forGetter(DisplayStats::locked),
+            Codec.BOOL.optionalFieldOf("voided", false).forGetter(DisplayStats::voided),
+            Codec.BOOL.optionalFieldOf("compressed", false).forGetter(DisplayStats::compressed)
+    ).apply(builder, DisplayStats::new));
 
     /**
      * @param storage A storage.
@@ -49,18 +57,4 @@ public record DisplayStats(long count, long capacity, boolean locked, boolean vo
         return capacity <= 0 ? 0 : (float) Math.min(1D, (double) count / capacity);
     }
 
-    public CompoundTag toTag() {
-        CompoundTag tag = new CompoundTag();
-        tag.putLong("count", count);
-        tag.putLong("capacity", capacity);
-        tag.putBoolean("locked", locked);
-        tag.putBoolean("voided", voided);
-        tag.putBoolean("compressed", compressed);
-        return tag;
-    }
-
-    public static DisplayStats fromTag(CompoundTag tag) {
-        return new DisplayStats(tag.getLong("count"), tag.getLong("capacity"), tag.getBoolean("locked"),
-                tag.getBoolean("voided"), tag.getBoolean("compressed"));
-    }
 }

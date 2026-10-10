@@ -1,12 +1,19 @@
 package org.cyclops.colossalchests2.network;
 
+import org.cyclops.colossalchests2.storage.CompressionFamiliesCache;
 import net.minecraft.server.level.ServerPlayer;
+import org.cyclops.colossalchests2.storage.CompressionFamiliesCache;
 import org.cyclops.colossalchests2.ColossalChestsInstance;
+import org.cyclops.colossalchests2.storage.CompressionFamiliesCache;
 import org.cyclops.colossalchests2.config.ChestTablesLoader;
+import org.cyclops.colossalchests2.storage.CompressionFamiliesCache;
 import org.cyclops.colossalchests2.network.packet.ClientboundChestStatePacket;
+import org.cyclops.colossalchests2.storage.CompressionFamiliesCache;
 import org.cyclops.colossalchests2.network.packet.ClientboundChestTablesPacket;
+import org.cyclops.colossalchests2.storage.CompressionFamiliesCache;
 import org.cyclops.cyclopscore.network.PacketBase;
 
+import org.cyclops.colossalchests2.storage.CompressionFamiliesCache;
 import java.util.function.BiPredicate;
 
 /**
@@ -34,7 +41,7 @@ public final class ChestNetwork {
 
     public static void sendToPlayer(PacketBase<?> packet, ServerPlayer player) {
         if (canReceive.test(player, packet)) {
-            ColossalChestsInstance.MOD.getPacketHandlerCommon().sendToPlayer(packet, player);
+            ColossalChestsInstance.MOD.getPacketHandler().sendToPlayer(packet, player);
         }
     }
 
@@ -42,7 +49,7 @@ public final class ChestNetwork {
      * Send the loaded material and upgrade tables, when a player joins and after datapacks are reloaded.
      */
     public static void sendTables(ServerPlayer player) {
-        sendToPlayer(new ClientboundChestTablesPacket(ChestTablesLoader.get()), player);
+        sendToPlayer(new ClientboundChestTablesPacket(ChestTablesLoader.get(), CompressionFamiliesCache.getConversions(player.level())), player);
     }
 
 }

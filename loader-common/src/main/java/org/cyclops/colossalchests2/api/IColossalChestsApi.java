@@ -1,10 +1,10 @@
 package org.cyclops.colossalchests2.api;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -33,6 +33,11 @@ public interface IColossalChestsApi {
     Block createCore(Block.Properties properties, ChestMaterial material);
 
     /**
+     * @return A new item of a wall or core, which shows the limits of its material, for the caller to register.
+     */
+    BlockItem createMemberItem(Block block, Item.Properties properties);
+
+    /**
      * Register an upgrade, which must happen while mods are constructed.
      */
     void registerUpgrade(ChestUpgrade upgrade);
@@ -48,7 +53,7 @@ public interface IColossalChestsApi {
     List<ChestUpgrade> getUpgrades();
 
     @Nullable
-    ChestUpgrade getUpgrade(ResourceLocation id);
+    ChestUpgrade getUpgrade(Identifier id);
 
     /**
      * @return All materials that have a core block, in the order of their data files.
@@ -68,17 +73,17 @@ public interface IColossalChestsApi {
     /**
      * @return The loaded properties of a material, or the defaults.
      */
-    MaterialProperties getMaterialProperties(ResourceLocation material);
+    MaterialProperties getMaterialProperties(Identifier material);
 
     /**
      * @return The loaded properties of an upgrade, or disabled.
      */
-    UpgradeProperties getUpgradeProperties(ResourceLocation upgrade);
+    UpgradeProperties getUpgradeProperties(Identifier upgrade);
 
     /**
      * @return How many of the upgrade a chest of the material takes.
      */
-    int getMaxUpgradeCount(ResourceLocation upgrade, ResourceLocation material);
+    int getMaxUpgradeCount(Identifier upgrade, Identifier material);
 
     /**
      * @return The formed chest whose shell contains the position.
@@ -98,6 +103,6 @@ public interface IColossalChestsApi {
     /**
      * Right-click on a member with an item: lets the item be used while not formed, and opens the chest otherwise.
      */
-    ItemInteractionResult useItemOnMember(ItemStack stack, BlockState state);
+    InteractionResult useItemOnMember(ItemStack stack, BlockState state);
 
 }

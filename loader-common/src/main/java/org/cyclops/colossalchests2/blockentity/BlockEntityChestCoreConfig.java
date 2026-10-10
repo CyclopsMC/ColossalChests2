@@ -20,7 +20,7 @@ public class BlockEntityChestCoreConfig<M extends IModBase> extends BlockEntityC
         super(
                 mod,
                 "chest_core",
-                eConfig -> new BlockEntityType<>(supplier, Set.copyOf(BlockChestCore.getInstances()), null) {
+                eConfig -> new BlockEntityType<>(supplier, Set.copyOf(BlockChestCore.getInstances())) {
                     // Also accept cores of added materials, which may be registered later.
                     @Override
                     public boolean isValid(BlockState state) {
@@ -34,13 +34,13 @@ public class BlockEntityChestCoreConfig<M extends IModBase> extends BlockEntityC
      * Only called on the client.
      * @return The renderer of the giant chest.
      */
-    protected BlockEntityRendererProvider<BlockEntityChestCore> getRendererProvider() {
+    protected BlockEntityRendererProvider<BlockEntityChestCore, RenderChestCore.State> getRendererProvider() {
         return RenderChestCore::new;
     }
 
     @Override
-    public void onForgeRegistered() {
-        super.onForgeRegistered();
+    public void onRegistryRegistered() {
+        super.onRegistryRegistered();
         if (getMod().getModHelpers().getMinecraftHelpers().isClientSide()) {
             getMod().getProxy().registerRenderer(getInstance(), getRendererProvider());
         }

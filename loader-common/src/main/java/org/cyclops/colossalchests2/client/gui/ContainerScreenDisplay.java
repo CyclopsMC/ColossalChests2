@@ -2,14 +2,15 @@ package org.cyclops.colossalchests2.client.gui;
 
 import com.google.common.collect.Lists;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -26,12 +27,12 @@ import java.util.List;
  */
 public class ContainerScreenDisplay extends AbstractContainerScreen<ContainerDisplay> {
 
-    private static final int COLOR_LABEL = 0x404040;
+    private static final int COLOR_LABEL = 0xFF404040;
 
     private static final List<DisplayOption> ICON_OPTIONS = List.of(DisplayOption.COUNT, DisplayOption.FILL_LEVEL,
             DisplayOption.UPGRADE_INDICATORS);
-    private static final WidgetSprites BUTTON_SPRITES = new WidgetSprites(ResourceLocation.withDefaultNamespace("widget/button"),
-            ResourceLocation.withDefaultNamespace("widget/button_disabled"), ResourceLocation.withDefaultNamespace("widget/button_highlighted"));
+    private static final WidgetSprites BUTTON_SPRITES = new WidgetSprites(Identifier.withDefaultNamespace("widget/button"),
+            Identifier.withDefaultNamespace("widget/button_disabled"), Identifier.withDefaultNamespace("widget/button_highlighted"));
     private static final int COLOR_ICON_OFF = 0xA0000000;
     private static final int COLOR_ICON_STRIKE = 0xFFD04030;
     private static final int COLOR_BAR_BACKGROUND = 0xFF101010;
@@ -39,13 +40,11 @@ public class ContainerScreenDisplay extends AbstractContainerScreen<ContainerDis
 
     private final List<Button> shownButtons = Lists.newArrayList();
     private final List<OptionButton> optionButtons = Lists.newArrayList();
-    private final ItemStack upgradeIcon = new ItemStack(BuiltInRegistries.ITEM.get(
-            ResourceLocation.fromNamespaceAndPath(Reference.MOD_ID, "upgrade_" + ChestUpgrades.LOCK.getId().getPath())));
+    private final ItemStack upgradeIcon = new ItemStack(BuiltInRegistries.ITEM.getValue(
+            Identifier.fromNamespaceAndPath(Reference.MOD_ID, "upgrade_" + ChestUpgrades.LOCK.getId().getPath())));
 
     public ContainerScreenDisplay(ContainerDisplay menu, Inventory inventory, Component title) {
-        super(menu, inventory, title);
-        this.imageWidth = ContainerDisplay.WIDTH;
-        this.imageHeight = ContainerDisplay.HEIGHT;
+        super(menu, inventory, title, ContainerDisplay.WIDTH, ContainerDisplay.HEIGHT);
         this.inventoryLabelY = ContainerDisplay.INVENTORY_Y - 11;
     }
 
@@ -88,7 +87,8 @@ public class ContainerScreenDisplay extends AbstractContainerScreen<ContainerDis
     }
 
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
         GuiPanels.drawPanel(guiGraphics, leftPos, topPos, imageWidth, imageHeight);
         for (Slot slot : menu.slots) {
             GuiPanels.drawSlot(guiGraphics, leftPos + slot.x, topPos + slot.y);
@@ -96,32 +96,27 @@ public class ContainerScreenDisplay extends AbstractContainerScreen<ContainerDis
     }
 
     @Override
-    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        super.renderLabels(guiGraphics, mouseX, mouseY);
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        super.extractLabels(guiGraphics, mouseX, mouseY);
         List<Direction> faces = menu.getFaces();
         for (int i = 0; i < faces.size(); i++) {
             Component label = Component.translatable(menu.getFaceTranslationKey(faces.get(i)));
-            guiGraphics.drawString(font, label, menu.getColumnX(i) - font.width(label) / 2, ContainerDisplay.LABEL_Y, COLOR_LABEL, false);
+            guiGraphics.text(font, label, menu.getColumnX(i) - font.width(label) / 2, ContainerDisplay.LABEL_Y, COLOR_LABEL, false);
         }
     }
 
-    @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
-        renderTooltip(guiGraphics, mouseX, mouseY);
-    }
 
     @Override
-    protected void renderTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    protected void extractTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         if (menu.getCarried().isEmpty() && hoveredSlot != null && menu.isGhostSlot(hoveredSlot.index) && !hoveredSlot.hasItem()) {
             String key = "gui.colossalchests2.wall.displayed";
-            guiGraphics.renderComponentTooltip(font, List.of(Component.translatable(key),
+            guiGraphics.setComponentTooltipForNextFrame(font, List.of(Component.translatable(key),
                     Component.translatable(key + ".info").withStyle(ChatFormatting.GRAY)), mouseX, mouseY);
             return;
         }
         for (Button button : shownButtons) {
             if (button.isHovered()) {
-                guiGraphics.renderComponentTooltip(font, List.of(Component.translatable("gui.colossalchests2.display.shown_option"),
+                guiGraphics.setComponentTooltipForNextFrame(font, List.of(Component.translatable("gui.colossalchests2.display.shown_option"),
                         Component.translatable("gui.colossalchests2.display.shown_option.info").withStyle(ChatFormatting.GRAY)), mouseX, mouseY);
                 return;
             }
@@ -129,12 +124,12 @@ public class ContainerScreenDisplay extends AbstractContainerScreen<ContainerDis
         for (OptionButton button : optionButtons) {
             if (button.isHovered()) {
                 String key = button.option.getTranslationKey();
-                guiGraphics.renderComponentTooltip(font, List.of(button.getMessage(),
+                guiGraphics.setComponentTooltipForNextFrame(font, List.of(button.getMessage(),
                         Component.translatable(key + ".info").withStyle(ChatFormatting.GRAY)), mouseX, mouseY);
                 return;
             }
         }
-        super.renderTooltip(guiGraphics, mouseX, mouseY);
+        super.extractTooltip(guiGraphics, mouseX, mouseY);
     }
 
     /**
@@ -162,34 +157,31 @@ public class ContainerScreenDisplay extends AbstractContainerScreen<ContainerDis
         }
 
         @Override
-        protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        protected void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
             // The background only, the icon replaces the message.
-            guiGraphics.blitSprite(BUTTON_SPRITES.get(active, isHoveredOrFocused()), getX(), getY(), width, height);
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BUTTON_SPRITES.get(active, isHoveredOrFocused()), getX(), getY(), width, height);
             int x = getX();
             int y = getY();
             switch (option) {
-                case COUNT -> guiGraphics.drawString(font, "64", x + (width - font.width("64")) / 2 + 1, y + 4, 0xFFFFFF, true);
+                case COUNT -> guiGraphics.text(font, "64", x + (width - font.width("64")) / 2 + 1, y + 4, 0xFFFFFFFF, true);
                 case FILL_LEVEL -> {
                     guiGraphics.fill(x + 3, y + 6, x + 13, y + 10, COLOR_BAR_BACKGROUND);
                     guiGraphics.fill(x + 3, y + 6, x + 10, y + 10, COLOR_BAR);
                 }
                 default -> {
-                    guiGraphics.pose().pushPose();
-                    guiGraphics.pose().translate(x + 2, y + 2, 0);
-                    guiGraphics.pose().scale(0.75F, 0.75F, 1);
-                    guiGraphics.renderItem(upgradeIcon, 0, 0);
-                    guiGraphics.pose().popPose();
+                    guiGraphics.pose().pushMatrix();
+                    guiGraphics.pose().translate(x + 2, y + 2);
+                    guiGraphics.pose().scale(0.75F, 0.75F);
+                    guiGraphics.item(upgradeIcon, 0, 0);
+                    guiGraphics.pose().popMatrix();
                 }
             }
             if (!isOn()) {
-                // Dim the icon and strike it through, above the item.
-                guiGraphics.pose().pushPose();
-                guiGraphics.pose().translate(0, 0, 200);
+                // Dim the icon and strike it through, drawn after the item so above it.
                 guiGraphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, COLOR_ICON_OFF);
                 for (int i = 2; i < width - 2; i++) {
                     guiGraphics.fill(x + i, y + height - 1 - i, x + i + 1, y + height - i, COLOR_ICON_STRIKE);
                 }
-                guiGraphics.pose().popPose();
             }
         }
     }

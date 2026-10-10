@@ -1,12 +1,10 @@
 package org.cyclops.colossalchests2.api.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.cyclops.colossalchests2.api.IChest;
 
 /**
@@ -18,22 +16,22 @@ public class FunctionalWallOverlay implements IChestOverlay {
     private static final float MIN = 3F / 16F;
     private static final float MAX = 13F / 16F;
 
-    private final ResourceLocation texture;
+    private final Identifier texture;
 
     /**
      * @param texture A block atlas texture, such as othermod:block/chest_wall_example_icon.
      */
-    public FunctionalWallOverlay(ResourceLocation texture) {
+    public FunctionalWallOverlay(Identifier texture) {
         this.texture = texture;
     }
 
     @Override
     public void render(IChest chest, BlockPos pos, Direction face, float partialTick,
-                       PoseStack poseStack, MultiBufferSource buffers, int light, int overlay) {
+                       PoseStack poseStack, SubmitNodeCollector collector, int light, int overlay) {
         if (!ChestOverlayHelpers.isRevealingMembers()) {
             return;
         }
-        ChestOverlayHelpers.renderSprite(poseStack, buffers, Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(texture),
+        ChestOverlayHelpers.renderSprite(poseStack, collector, ChestOverlayHelpers.getBlockSprite(texture),
                 MIN, MIN, MAX, MAX, light, overlay);
     }
 

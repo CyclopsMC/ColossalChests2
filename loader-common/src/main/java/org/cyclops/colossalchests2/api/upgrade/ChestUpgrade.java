@@ -1,7 +1,7 @@
 package org.cyclops.colossalchests2.api.upgrade;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.cyclops.colossalchests2.api.ColossalChestsApi;
 import org.cyclops.colossalchests2.api.IChest;
@@ -20,13 +20,13 @@ import java.util.List;
  */
 public class ChestUpgrade {
 
-    private final ResourceLocation id;
+    private final Identifier id;
 
     /**
      * @param id The upgrade id, matching its data file data/[namespace]/colossalchests2/upgrade/[name].json.
      *           Without a data file, the upgrade is disabled.
      */
-    public ChestUpgrade(ResourceLocation id) {
+    public ChestUpgrade(Identifier id) {
         this.id = id;
     }
 
@@ -37,7 +37,7 @@ public class ChestUpgrade {
         return Component.translatable(id.withPrefix("upgrade_").toLanguageKey("item"));
     }
 
-    public ResourceLocation getId() {
+    public Identifier getId() {
         return id;
     }
 
@@ -49,7 +49,7 @@ public class ChestUpgrade {
      * @param material A material id.
      * @return How many of this upgrade a chest of that material takes.
      */
-    public int getMaxCount(ResourceLocation material) {
+    public int getMaxCount(Identifier material) {
         return ColossalChestsApi.get().getMaxUpgradeCount(id, material);
     }
 

@@ -2,87 +2,99 @@ package org.cyclops.colossalchests2.gametest;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.Container;
-import net.minecraft.world.SimpleContainer;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
-import net.neoforged.neoforge.items.wrapper.InvWrapper;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.ResourceHandlerUtil;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.neoforged.neoforge.transfer.item.ItemStacksResourceHandler;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
 import org.cyclops.colossalchests2.Reference;
 import org.cyclops.colossalchests2.RegistryEntries;
 import org.cyclops.colossalchests2.api.ChestMaterial;
 import org.cyclops.colossalchests2.block.WallType;
-import org.cyclops.colossalchests2.capability.ItemHandlerChestStorage;
-import org.cyclops.colossalchests2.capability.ItemHandlerLogic;
+import org.cyclops.colossalchests2.capability.ResourceHandlerChestStorage;
+import org.cyclops.colossalchests2.capability.WallAccess;
 import org.cyclops.colossalchests2.modcompat.InventoryStateChestStorage;
 import org.cyclops.colossalchests2.storage.CapacityProfile;
 import org.cyclops.colossalchests2.storage.ChestStorage;
 import org.cyclops.commoncapabilities.api.capability.inventorystate.IInventoryState;
+import org.cyclops.cyclopscore.gametest.GameTest;
 
 /**
- * Item handler adapter tests through NeoForge's own transfer helpers.
+ * Item resource handler tests through NeoForge's own transfer helpers.
  * @author rubensworks
  */
-@GameTestHolder(Reference.MOD_ID)
-@PrefixGameTestTemplate(false)
 public class GameTestsCapabilitiesNeoForge {
 
-    public static final String TEMPLATE_EMPTY = "empty10";
+    public static final String TEMPLATE_EMPTY = Reference.MOD_ID + ":empty10";
+    private static final ItemResource STONE = ItemResource.of(Items.STONE);
 
     private static ChestStorage createStorage() {
         return new ChestStorage(3, CapacityProfile.ofDepth(4));
     }
 
+    private static int insert(ResourceHandler<ItemResource> handler, int index, ItemResource resource, int amount) {
+        try (Transaction tx = Transaction.openRoot()) {
+            int inserted = handler.insert(index, resource, amount, tx);
+            tx.commit();
+            return inserted;
+        }
+    }
+
+    private static int extract(ResourceHandler<ItemResource> handler, int index, ItemResource resource, int amount) {
+        try (Transaction tx = Transaction.openRoot()) {
+            int extracted = handler.extract(index, resource, amount, tx);
+            tx.commit();
+            return extracted;
+        }
+    }
+
     @GameTest(template = TEMPLATE_EMPTY)
     public void testInsertStackedMergesIntoMatchingSlot(GameTestHelper helper) {
         ChestStorage storage = createStorage();
-        IItemHandler handler = new ItemHandlerChestStorage(new ItemHandlerLogic(storage));
-        storage.insert(2, new ItemStack(Items.STONE), 10, false);
+        ResourceHandler<ItemResource> handler = new ResourceHandlerChestStorage(storage);
+        storage.insert(2, STONE.toStack(), 10, false);
 
-        ItemStack remainder = ItemHandlerHelper.insertItemStacked(handler, new ItemStack(Items.STONE, 64), false);
+        int inserted = ResourceHandlerUtil.insertStacking(handler, STONE, 64, null);
 
-        helper.assertTrue(remainder.isEmpty(), "Expected no remainder");
+        helper.assertValueEqual(inserted, 64, "inserted");
         helper.assertValueEqual(storage.getSlot(2).getCount(), 74L, "merged count");
         helper.assertTrue(storage.getSlot(0).isEmpty(), "Expected slot 0 to stay empty");
         helper.succeed();
     }
 
     @GameTest(template = TEMPLATE_EMPTY)
-    public void testInsertSimulateLeavesStorageUntouched(GameTestHelper helper) {
+    public void testAbortedTransactionLeavesStorageUntouched(GameTestHelper helper) {
         ChestStorage storage = createStorage();
-        IItemHandler handler = new ItemHandlerChestStorage(new ItemHandlerLogic(storage));
+        ResourceHandlerChestStorage handler = new ResourceHandlerChestStorage(storage);
+        storage.insert(1, STONE.toStack(), 10, false);
+        ResourceHandler<ItemResource> wallView = handler.withAccess(WallAccess.OPEN);
 
-        ItemStack remainder = ItemHandlerHelper.insertItem(handler, new ItemStack(Items.STONE, 64), true);
+        try (Transaction tx = Transaction.openRoot()) {
+            helper.assertValueEqual(handler.insert(0, STONE, 64, tx), 64, "inserted in the transaction");
+            helper.assertValueEqual(wallView.extract(1, STONE, 5, tx), 5, "extracted through a wall view");
+            helper.assertValueEqual(storage.getSlot(0).getCount(), 64L, "count inside the transaction");
+            // Not committed.
+        }
 
-        helper.assertTrue(remainder.isEmpty(), "Expected the simulated insert to fit");
-        helper.assertTrue(storage.getSlot(0).isEmpty(), "Expected no change after simulation");
+        helper.assertTrue(storage.getSlot(0).isEmpty(), "Expected the insert to be rolled back");
+        helper.assertValueEqual(storage.getSlot(1).getCount(), 10L, "count after rolling back the extract");
         helper.succeed();
     }
 
     @GameTest(template = TEMPLATE_EMPTY)
     public void testMoveAllToVanillaContainer(GameTestHelper helper) {
         ChestStorage storage = createStorage();
-        IItemHandler handler = new ItemHandlerChestStorage(new ItemHandlerLogic(storage));
-        storage.insert(0, new ItemStack(Items.STONE), 200, false);
-        IItemHandler target = new InvWrapper(new SimpleContainer(27));
+        ResourceHandler<ItemResource> handler = new ResourceHandlerChestStorage(storage);
+        storage.insert(0, STONE.toStack(), 200, false);
+        ResourceHandler<ItemResource> target = new ItemStacksResourceHandler(27);
 
-        // Extract-all loop as automation does: one stack at a time until empty.
-        int moved = 0;
-        for (int i = 0; i < 100; i++) {
-            ItemStack extracted = handler.extractItem(0, 64, false);
-            if (extracted.isEmpty()) {
-                break;
-            }
-            helper.assertTrue(ItemHandlerHelper.insertItemStacked(target, extracted, false).isEmpty(), "Target is full");
-            moved += extracted.getCount();
-        }
+        int moved = ResourceHandlerUtil.move(handler, target, resource -> true, Integer.MAX_VALUE, null);
 
         helper.assertValueEqual(moved, 200, "moved count");
         helper.assertTrue(storage.getSlot(0).isEmpty(), "Expected the chest slot to be empty");
@@ -90,14 +102,15 @@ public class GameTestsCapabilitiesNeoForge {
     }
 
     @GameTest(template = TEMPLATE_EMPTY)
-    public void testCountAboveIntClamped(GameTestHelper helper) {
+    public void testCountAboveIntReportedAsLong(GameTestHelper helper) {
         ChestStorage storage = new ChestStorage(1, CapacityProfile.ofDepth(1L << 40).withMaxItemsPerSlot(Long.MAX_VALUE));
-        IItemHandler handler = new ItemHandlerChestStorage(new ItemHandlerLogic(storage));
-        storage.insert(0, new ItemStack(Items.STONE), Integer.MAX_VALUE + 10L, false);
+        ResourceHandler<ItemResource> handler = new ResourceHandlerChestStorage(storage);
+        storage.insert(0, STONE.toStack(), Integer.MAX_VALUE + 10L, false);
 
-        helper.assertValueEqual(handler.getStackInSlot(0).getCount(), Integer.MAX_VALUE, "clamped count");
-        helper.assertValueEqual(handler.getSlotLimit(0), Integer.MAX_VALUE, "clamped limit");
-        helper.assertValueEqual(handler.extractItem(0, 64, false).getCount(), 64, "extracted count");
+        helper.assertValueEqual(handler.getAmountAsLong(0), Integer.MAX_VALUE + 10L, "long count");
+        helper.assertValueEqual(handler.getAmountAsInt(0), Integer.MAX_VALUE, "clamped count");
+        helper.assertTrue(handler.getCapacityAsLong(0, STONE) > Integer.MAX_VALUE, "Expected a long capacity");
+        helper.assertValueEqual(extract(handler, 0, STONE, 64), 64, "extracted count");
         helper.assertValueEqual(storage.getSlot(0).getCount(), Integer.MAX_VALUE + 10L - 64, "remaining count");
         helper.succeed();
     }
@@ -105,16 +118,18 @@ public class GameTestsCapabilitiesNeoForge {
     @GameTest(template = TEMPLATE_EMPTY)
     public void testInventoryStateChangesOnlyOnChange(GameTestHelper helper) {
         ChestStorage storage = createStorage();
-        IItemHandler handler = new ItemHandlerChestStorage(new ItemHandlerLogic(storage));
+        ResourceHandler<ItemResource> handler = new ResourceHandlerChestStorage(storage);
         IInventoryState state = new InventoryStateChestStorage(storage);
 
         int initial = state.getState();
-        handler.insertItem(0, new ItemStack(Items.STONE, 5), true);
-        helper.assertValueEqual(state.getState(), initial, "state after simulation");
-        handler.insertItem(0, new ItemStack(Items.STONE, 5), false);
+        try (Transaction tx = Transaction.openRoot()) {
+            handler.insert(0, STONE, 5, tx);
+        }
+        helper.assertValueEqual(storage.getSlot(0).getCount(), 0L, "count after an aborted insert");
+        insert(handler, 0, STONE, 5);
         int afterInsert = state.getState();
         helper.assertTrue(afterInsert != initial, "Expected the state to change after an insert");
-        handler.extractItem(0, 1, false);
+        extract(handler, 0, STONE, 1);
         helper.assertTrue(state.getState() != afterInsert, "Expected the state to change after an extract");
         helper.succeed();
     }
@@ -129,22 +144,22 @@ public class GameTestsCapabilitiesNeoForge {
         helper.startSequence()
                 .thenWaitUntil(() -> GameTestsCommon.assertFormed(helper, corePos, min, 3))
                 .thenExecute(() -> {
-                    IItemHandler coreHandler = helper.getLevel().getCapability(Capabilities.ItemHandler.BLOCK, helper.absolutePos(corePos), Direction.NORTH);
-                    IItemHandler wallHandler = helper.getLevel().getCapability(Capabilities.ItemHandler.BLOCK, helper.absolutePos(wallPos), Direction.UP);
+                    ResourceHandler<ItemResource> coreHandler = helper.getLevel().getCapability(Capabilities.Item.BLOCK, helper.absolutePos(corePos), Direction.NORTH);
+                    ResourceHandler<ItemResource> wallHandler = helper.getLevel().getCapability(Capabilities.Item.BLOCK, helper.absolutePos(wallPos), Direction.UP);
                     IInventoryState state = helper.getLevel().getCapability(org.cyclops.commoncapabilities.api.capability.Capabilities.InventoryState.BLOCK, helper.absolutePos(wallPos), Direction.UP);
                     helper.assertTrue(coreHandler != null && wallHandler != null && state != null, "Expected capabilities on a formed chest");
-                    helper.assertTrue(helper.getLevel().getCapability(Capabilities.ItemHandler.BLOCK, helper.absolutePos(plainWallPos), Direction.EAST) == null,
+                    helper.assertTrue(helper.getLevel().getCapability(Capabilities.Item.BLOCK, helper.absolutePos(plainWallPos), Direction.EAST) == null,
                             "Expected no item handler on a plain wall");
                     int initialState = state.getState();
-                    helper.assertTrue(wallHandler.insertItem(0, new ItemStack(Items.STONE, 10), false).isEmpty(), "Expected the wall to accept items");
-                    helper.assertValueEqual(coreHandler.getStackInSlot(0).getCount(), 10, "count through the core");
+                    helper.assertValueEqual(insert(wallHandler, 0, STONE, 10), 10, "inserted through the wall");
+                    helper.assertValueEqual(coreHandler.getAmountAsLong(0), 10L, "count through the core");
                     helper.assertTrue(state.getState() != initialState, "Expected the inventory state to change");
                     helper.setBlock(brokenWall, Blocks.AIR);
                 })
                 .thenWaitUntil(() -> GameTestsCommon.assertDormant(helper, corePos))
                 .thenExecute(() -> {
-                    helper.assertTrue(helper.getLevel().getCapability(Capabilities.ItemHandler.BLOCK, helper.absolutePos(corePos), Direction.NORTH) == null, "Expected no item handler on a dormant core");
-                    helper.assertTrue(helper.getLevel().getCapability(Capabilities.ItemHandler.BLOCK, helper.absolutePos(wallPos), Direction.UP) == null, "Expected no item handler on a dormant wall");
+                    helper.assertTrue(helper.getLevel().getCapability(Capabilities.Item.BLOCK, helper.absolutePos(corePos), Direction.NORTH) == null, "Expected no item handler on a dormant core");
+                    helper.assertTrue(helper.getLevel().getCapability(Capabilities.Item.BLOCK, helper.absolutePos(wallPos), Direction.UP) == null, "Expected no item handler on a dormant wall");
                     helper.assertTrue(helper.getLevel().getCapability(org.cyclops.commoncapabilities.api.capability.Capabilities.InventoryState.BLOCK, helper.absolutePos(corePos), Direction.NORTH) == null, "Expected no inventory state on a dormant core");
                 })
                 .thenSucceed();
@@ -154,11 +169,11 @@ public class GameTestsCapabilitiesNeoForge {
     public void testUncolossalChestItemHandler(GameTestHelper helper) {
         BlockPos pos = new BlockPos(1, 1, 1);
         helper.setBlock(pos, RegistryEntries.BLOCK_UNCOLOSSAL_CHEST.value());
-        IItemHandler handler = helper.getLevel().getCapability(Capabilities.ItemHandler.BLOCK, helper.absolutePos(pos), Direction.UP);
+        ResourceHandler<ItemResource> handler = helper.getLevel().getCapability(Capabilities.Item.BLOCK, helper.absolutePos(pos), Direction.UP);
         helper.assertTrue(handler != null, "Expected an item handler");
-        helper.assertValueEqual(handler.getSlots(), 5, "slots");
-        helper.assertTrue(handler.insertItem(4, new ItemStack(Items.STONE, 10), false).isEmpty(), "Expected the stone to fit");
-        helper.assertValueEqual(((Container) helper.getBlockEntity(pos)).getItem(4).getCount(), 10, "stored count");
+        helper.assertValueEqual(handler.size(), 5, "slots");
+        helper.assertValueEqual(insert(handler, 4, STONE, 10), 10, "inserted");
+        helper.assertValueEqual(((Container) helper.getBlockEntity(pos, BlockEntity.class)).getItem(4).getCount(), 10, "stored count");
         helper.succeed();
     }
 

@@ -2,7 +2,7 @@ package org.cyclops.colossalchests2.upgrade;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.cyclops.colossalchests2.api.upgrade.ChestUpgrade;
 import org.cyclops.colossalchests2.storage.CapacityProfile;
@@ -87,7 +87,7 @@ public record UpgradeSet(Map<ChestUpgrade, Integer> counts) {
      * @return How many of the upgrade the chest takes: the material limit, and for slot upgrades only as many
      * as add slots below the maximum.
      */
-    public static int getMaxCount(ChestUpgrade upgrade, ResourceLocation material, int baseSlots, int maxSlots) {
+    public static int getMaxCount(ChestUpgrade upgrade, Identifier material, int baseSlots, int maxSlots) {
         int max = upgrade.getMaxCount(material);
         if (upgrade.getExtraSlots(1) > 0) {
             int count = 0;

@@ -1,5 +1,7 @@
 package org.cyclops.colossalchests2.block;
 
+import net.minecraft.world.level.ScheduledTickAccess;
+import net.minecraft.world.level.LevelReader;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -12,7 +14,6 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
@@ -27,7 +28,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.pathfinder.PathComputationType;
@@ -45,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
 public class BlockUncolossalChest extends BaseEntityBlock implements SimpleWaterloggedBlock {
 
     public static final MapCodec<BlockUncolossalChest> CODEC = simpleCodec(BlockUncolossalChest::new);
-    public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+    public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
     private static final VoxelShape SHAPE = Block.box(5.0D, 0.0D, 5.0D, 11.0D, 6.0D, 11.0D);
 
@@ -73,11 +74,12 @@ public class BlockUncolossalChest extends BaseEntityBlock implements SimpleWater
     }
 
     @Override
-    protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+    protected BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess ticks, BlockPos pos, Direction direction,
+                                     BlockPos neighborPos, BlockState neighborState, RandomSource random) {
         if (state.getValue(WATERLOGGED)) {
-            level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+            ticks.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
         }
-        return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
+        return super.updateShape(state, level, ticks, pos, direction, neighborPos, neighborState, random);
     }
 
     @Override
@@ -92,15 +94,15 @@ public class BlockUncolossalChest extends BaseEntityBlock implements SimpleWater
 
     @Override
     protected RenderShape getRenderShape(BlockState state) {
-        return RenderShape.ENTITYBLOCK_ANIMATED;
+        return RenderShape.INVISIBLE;
     }
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        if (!level.isClientSide && level.getBlockEntity(pos) instanceof BlockEntityUncolossalChest chest) {
+        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof BlockEntityUncolossalChest chest) {
             player.openMenu(chest);
         }
-        return InteractionResult.sidedSuccess(level.isClientSide);
+        return InteractionResult.SUCCESS;
     }
 
     /**
@@ -114,9 +116,8 @@ public class BlockUncolossalChest extends BaseEntityBlock implements SimpleWater
     }
 
     @Override
-    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-        Containers.dropContentsOnDestroy(state, newState, level, pos);
-        super.onRemove(state, level, pos, newState, movedByPiston);
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean movedByPiston) {
+        Containers.updateNeighboursAfterDestroy(state, level, pos);
     }
 
     @Override
@@ -125,7 +126,7 @@ public class BlockUncolossalChest extends BaseEntityBlock implements SimpleWater
     }
 
     @Override
-    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
         return AbstractContainerMenu.getRedstoneSignalFromBlockEntity(level.getBlockEntity(pos));
     }
 
@@ -153,7 +154,7 @@ public class BlockUncolossalChest extends BaseEntityBlock implements SimpleWater
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return level.isClientSide ? createTickerHelper(type, RegistryEntries.BLOCK_ENTITY_UNCOLOSSAL_CHEST.value(), BlockEntityUncolossalChest::clientTick) : null;
+        return level.isClientSide() ? createTickerHelper(type, RegistryEntries.BLOCK_ENTITY_UNCOLOSSAL_CHEST.value(), BlockEntityUncolossalChest::clientTick) : null;
     }
 
 }

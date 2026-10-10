@@ -19,13 +19,13 @@ public class BlockEntityUncolossalChestConfig<M extends IModBase> extends BlockE
         super(
                 mod,
                 "uncolossal_chest",
-                eConfig -> new BlockEntityType<>(supplier, Set.of(RegistryEntries.BLOCK_UNCOLOSSAL_CHEST.value()), null)
+                eConfig -> new BlockEntityType<>(supplier, Set.of(RegistryEntries.BLOCK_UNCOLOSSAL_CHEST.value()))
         );
     }
 
     @Override
-    public void onForgeRegistered() {
-        super.onForgeRegistered();
+    public void onRegistryRegistered() {
+        super.onRegistryRegistered();
         if (getMod().getModHelpers().getMinecraftHelpers().isClientSide()) {
             getMod().getProxy().registerRenderer(getInstance(), getRendererProvider());
         }
@@ -34,7 +34,7 @@ public class BlockEntityUncolossalChestConfig<M extends IModBase> extends BlockE
     /**
      * Only called on the client.
      */
-    protected BlockEntityRendererProvider<BlockEntityUncolossalChest> getRendererProvider() {
+    protected BlockEntityRendererProvider<BlockEntityUncolossalChest, RenderUncolossalChest.State> getRendererProvider() {
         return RenderUncolossalChest::new;
     }
 

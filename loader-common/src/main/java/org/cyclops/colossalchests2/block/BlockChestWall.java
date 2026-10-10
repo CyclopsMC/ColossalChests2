@@ -1,5 +1,6 @@
 package org.cyclops.colossalchests2.block;
 
+import java.util.function.Consumer;
 import com.google.common.collect.Lists;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
@@ -19,7 +20,7 @@ import java.util.List;
  * and make functional walls with {@link ChestMemberBlock}.
  * @author rubensworks
  */
-public class BlockChestWall extends ChestMemberBlock {
+public class BlockChestWall extends ChestMemberBlock implements ITooltipBlock {
 
     private static final List<BlockChestWall> INSTANCES = Lists.newArrayList();
 
@@ -56,10 +57,9 @@ public class BlockChestWall extends ChestMemberBlock {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+    public void appendTooltip(ItemStack stack, Item.TooltipContext context, Consumer<Component> tooltip, TooltipFlag flag) {
         if (material != null) {
-            tooltip.add(material.getLimitsTooltip());
+            tooltip.accept(material.getLimitsTooltip());
         }
     }
 

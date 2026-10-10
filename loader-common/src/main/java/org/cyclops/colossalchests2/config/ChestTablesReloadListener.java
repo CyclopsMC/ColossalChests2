@@ -1,8 +1,9 @@
 package org.cyclops.colossalchests2.config;
 
-import com.google.gson.Gson;
+import net.minecraft.util.ExtraCodecs;
+import net.minecraft.resources.FileToIdConverter;
 import com.google.gson.JsonElement;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
@@ -17,16 +18,16 @@ import java.util.Map;
  * Invalid files are logged and skipped, so their entries fall back to defaults.
  * @author rubensworks
  */
-public class ChestTablesReloadListener extends SimpleJsonResourceReloadListener {
+public class ChestTablesReloadListener extends SimpleJsonResourceReloadListener<JsonElement> {
 
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(Reference.MOD_ID, "chest_tables");
+    public static final Identifier ID = Identifier.fromNamespaceAndPath(Reference.MOD_ID, "chest_tables");
 
     public ChestTablesReloadListener() {
-        super(new Gson(), ChestTablesLoader.DIRECTORY);
+        super(ExtraCodecs.JSON, FileToIdConverter.json(ChestTablesLoader.DIRECTORY));
     }
 
     @Override
-    protected void apply(Map<ResourceLocation, JsonElement> files, ResourceManager resourceManager, ProfilerFiller profiler) {
+    protected void apply(Map<Identifier, JsonElement> files, ResourceManager resourceManager, ProfilerFiller profiler) {
         ChestTablesLoader.set(ChestTablesLoader.fromJson(files, error -> ColossalChestsInstance.MOD.log(Level.ERROR, error.getMessage())));
     }
 

@@ -8,8 +8,8 @@ import org.cyclops.colossalchests2.network.packet.ServerboundChestClickPacket;
 import org.cyclops.colossalchests2.network.packet.ServerboundChestDragPacket;
 import org.cyclops.colossalchests2.network.packet.ServerboundChestFormPacket;
 import org.cyclops.colossalchests2.network.packet.ServerboundDisplayTakePacket;
-import org.cyclops.cyclopscore.init.ModBase;
-import org.cyclops.cyclopscore.network.PacketHandler;
+import org.cyclops.cyclopscore.init.ModBaseNeoForge;
+import org.cyclops.cyclopscore.network.IPacketHandler;
 import org.cyclops.cyclopscore.proxy.CommonProxyComponent;
 
 /**
@@ -20,13 +20,13 @@ import org.cyclops.cyclopscore.proxy.CommonProxyComponent;
 public class CommonProxy extends CommonProxyComponent {
 
     @Override
-    public ModBase getMod() {
+    public ModBaseNeoForge<ColossalChests> getMod() {
         return ColossalChests._instance;
     }
 
     @Override
-    public void registerPacketHandlers(PacketHandler packetHandler) {
-        super.registerPacketHandlers(packetHandler);
+    public void registerPackets(IPacketHandler packetHandler) {
+        super.registerPackets(packetHandler);
         packetHandler.register(ClientboundChestSlotsPacket.class, ClientboundChestSlotsPacket.TYPE, ClientboundChestSlotsPacket.CODEC);
         packetHandler.register(ClientboundChestStatePacket.class, ClientboundChestStatePacket.TYPE, ClientboundChestStatePacket.CODEC);
         packetHandler.register(ClientboundChestTablesPacket.class, ClientboundChestTablesPacket.TYPE, ClientboundChestTablesPacket.CODEC);

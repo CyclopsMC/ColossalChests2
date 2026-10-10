@@ -2,7 +2,7 @@ package org.cyclops.colossalchests2.network.packet;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -17,7 +17,7 @@ import org.cyclops.cyclopscore.network.PacketBase;
  */
 public class ClientboundChestStatePacket extends PacketBase<ClientboundChestStatePacket> {
 
-    public static final Type<ClientboundChestStatePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Reference.MOD_ID, "chest_state"));
+    public static final Type<ClientboundChestStatePacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Reference.MOD_ID, "chest_state"));
     public static final StreamCodec<RegistryFriendlyByteBuf, ClientboundChestStatePacket> CODEC = getCodec(ClientboundChestStatePacket::new);
 
     private int containerId;

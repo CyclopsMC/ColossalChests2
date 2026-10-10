@@ -7,15 +7,9 @@
     "IPI"
   ],
   "key": {
-    "I": {
-      "item": "minecraft:iron_ingot"
-    },
-    "P": {
-      "item": "minecraft:piston"
-    },
-    "C": {
-      "tag": "colossalchests2:chest_walls"
-    }
+    "I": "minecraft:iron_ingot",
+    "P": "minecraft:piston",
+    "C": "#colossalchests2:chest_walls"
   },
   "result": {
     "id": "colossalchests2:upgrade_compression",

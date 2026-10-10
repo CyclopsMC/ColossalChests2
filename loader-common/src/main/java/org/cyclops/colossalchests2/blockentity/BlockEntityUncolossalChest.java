@@ -1,10 +1,11 @@
 package org.cyclops.colossalchests2.blockentity;
 
+import net.minecraft.world.entity.ContainerUser;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.entity.player.Inventory;
@@ -49,7 +50,7 @@ public class BlockEntityUncolossalChest extends BaseContainerBlockEntity impleme
         }
 
         @Override
-        protected boolean isOwnContainer(Player player) {
+        public boolean isOwnContainer(Player player) {
             return player.containerMenu instanceof ContainerUncolossalChest menu && menu.getContainer() == BlockEntityUncolossalChest.this;
         }
     };
@@ -90,16 +91,16 @@ public class BlockEntityUncolossalChest extends BaseContainerBlockEntity impleme
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
         items = NonNullList.withSize(getContainerSize(), ItemStack.EMPTY);
-        ContainerHelper.loadAllItems(tag, items, registries);
+        ContainerHelper.loadAllItems(input, items);
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        ContainerHelper.saveAllItems(tag, items, registries);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        ContainerHelper.saveAllItems(output, items);
     }
 
     @Override
@@ -112,16 +113,16 @@ public class BlockEntityUncolossalChest extends BaseContainerBlockEntity impleme
     }
 
     @Override
-    public void startOpen(Player player) {
-        if (!remove && !player.isSpectator()) {
-            openersCounter.incrementOpeners(player, getLevel(), getBlockPos(), getBlockState());
+    public void startOpen(ContainerUser user) {
+        if (!remove && !user.getLivingEntity().isSpectator()) {
+            openersCounter.incrementOpeners(user.getLivingEntity(), getLevel(), getBlockPos(), getBlockState(), user.getContainerInteractionRange());
         }
     }
 
     @Override
-    public void stopOpen(Player player) {
-        if (!remove && !player.isSpectator()) {
-            openersCounter.decrementOpeners(player, getLevel(), getBlockPos(), getBlockState());
+    public void stopOpen(ContainerUser user) {
+        if (!remove && !user.getLivingEntity().isSpectator()) {
+            openersCounter.decrementOpeners(user.getLivingEntity(), getLevel(), getBlockPos(), getBlockState());
         }
     }
 

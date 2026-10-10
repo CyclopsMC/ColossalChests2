@@ -3,7 +3,7 @@ package org.cyclops.colossalchests2.upgrade;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.cyclops.colossalchests2.GeneralConfig;
 import org.cyclops.colossalchests2.Reference;
 import org.cyclops.colossalchests2.api.IChestContents;
@@ -129,12 +129,12 @@ public final class ChestUpgrades {
     }
 
     @Nullable
-    public static ChestUpgrade byId(ResourceLocation id) {
+    public static ChestUpgrade byId(Identifier id) {
         return all.stream().filter(upgrade -> upgrade.getId().equals(id)).findFirst().orElse(null);
     }
 
-    private static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(Reference.MOD_ID, path);
+    private static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath(Reference.MOD_ID, path);
     }
 
 }

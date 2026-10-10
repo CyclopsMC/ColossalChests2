@@ -3,7 +3,7 @@ package org.cyclops.colossalchests2.api;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.Map;
 import java.util.Optional;
@@ -20,8 +20,8 @@ import java.util.Optional;
  *              materials. Materials after the same one are ordered by id, so by mod id first.
  * @author rubensworks
  */
-public record MaterialProperties(int upgradeSlots, int maxSize, boolean blastResistant, Map<ResourceLocation, Integer> upgradeLimits,
-                                 Optional<ResourceLocation> after) {
+public record MaterialProperties(int upgradeSlots, int maxSize, boolean blastResistant, Map<Identifier, Integer> upgradeLimits,
+                                 Optional<Identifier> after) {
 
     /**
      * The smallest outer edge length of a chest.
@@ -38,9 +38,9 @@ public record MaterialProperties(int upgradeSlots, int maxSize, boolean blastRes
             Codec.intRange(0, 64).optionalFieldOf("upgrade_slots", DEFAULT.upgradeSlots()).forGetter(MaterialProperties::upgradeSlots),
             Codec.intRange(MIN_SIZE, MAX_SIZE).optionalFieldOf("max_size", DEFAULT.maxSize()).forGetter(MaterialProperties::maxSize),
             Codec.BOOL.optionalFieldOf("blast_resistant", DEFAULT.blastResistant()).forGetter(MaterialProperties::blastResistant),
-            Codec.unboundedMap(ResourceLocation.CODEC, Codec.intRange(0, 64)).optionalFieldOf("upgrade_limits", Map.of())
+            Codec.unboundedMap(Identifier.CODEC, Codec.intRange(0, 64)).optionalFieldOf("upgrade_limits", Map.of())
                     .forGetter(MaterialProperties::upgradeLimits),
-            ResourceLocation.CODEC.optionalFieldOf("after").forGetter(MaterialProperties::after)
+            Identifier.CODEC.optionalFieldOf("after").forGetter(MaterialProperties::after)
     ).apply(i, MaterialProperties::new));
 
     public MaterialProperties {

@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.cyclops.colossalchests2.api.ChestMaterial;
 import org.cyclops.colossalchests2.api.MaterialProperties;
 import org.cyclops.colossalchests2.api.UpgradeProperties;
@@ -27,7 +27,7 @@ import static org.junit.Assert.*;
  */
 public class TestChestTables {
 
-    private static final ResourceLocation TIN = ResourceLocation.fromNamespaceAndPath("othermod", "tin");
+    private static final Identifier TIN = Identifier.fromNamespaceAndPath("othermod", "tin");
 
     private static JsonElement read(String path) throws Exception {
         try (Reader reader = new InputStreamReader(Objects.requireNonNull(
@@ -36,11 +36,11 @@ public class TestChestTables {
         }
     }
 
-    private static ResourceLocation material(ResourceLocation id) {
+    private static Identifier material(Identifier id) {
         return id.withPrefix("material/");
     }
 
-    private static ResourceLocation upgrade(ResourceLocation id) {
+    private static Identifier upgrade(Identifier id) {
         return id.withPrefix("upgrade/");
     }
 
@@ -58,7 +58,7 @@ public class TestChestTables {
 
     @Test
     public void testShippedMaterials() throws Exception {
-        Map<ResourceLocation, JsonElement> files = Maps.newHashMap();
+        Map<Identifier, JsonElement> files = Maps.newHashMap();
         for (ChestMaterial material : ChestMaterial.BUILT_IN) {
             files.put(material(material.id()), read(ChestTablesLoader.DIRECTORY_MATERIAL + "/" + material.getName() + ".json"));
         }
@@ -86,8 +86,8 @@ public class TestChestTables {
 
     @Test
     public void testMaterialUpgradeLimits() {
-        ResourceLocation depth = ChestUpgrades.DEPTH.getId();
-        ResourceLocation copper = ResourceLocation.fromNamespaceAndPath("othermod", "copper");
+        Identifier depth = ChestUpgrades.DEPTH.getId();
+        Identifier copper = Identifier.fromNamespaceAndPath("othermod", "copper");
         ChestTables tables = ChestTablesLoader.fromJson(Map.of(
                 upgrade(depth), JsonParser.parseString("{\"max_count\": 2, \"max_count_by_material\": {\"othermod:copper\": 4}}"),
                 material(TIN), JsonParser.parseString("{\"upgrade_limits\": {\"colossalchests2:depth\": 5}}"),
@@ -95,7 +95,7 @@ public class TestChestTables {
         assertEquals(5, tables.getMaxUpgradeCount(depth, TIN));
         // The upgrade's own limit for a material wins.
         assertEquals(4, tables.getMaxUpgradeCount(depth, copper));
-        assertEquals(2, tables.getMaxUpgradeCount(depth, ResourceLocation.fromNamespaceAndPath("othermod", "lead")));
+        assertEquals(2, tables.getMaxUpgradeCount(depth, Identifier.fromNamespaceAndPath("othermod", "lead")));
     }
 
     @Test
@@ -116,11 +116,11 @@ public class TestChestTables {
 
     @Test
     public void testUpgradeLimitsByMaterial() {
-        ResourceLocation depth = ChestUpgrades.DEPTH.getId();
+        Identifier depth = ChestUpgrades.DEPTH.getId();
         ChestTables tables = ChestTablesLoader.fromJson(Map.of(upgrade(depth),
                 JsonParser.parseString("{\"max_count\": 2, \"max_count_by_material\": {\"othermod:tin\": 5}, \"value\": 4}")));
         assertEquals(5, tables.getUpgrade(depth).getMaxCount(TIN));
-        assertEquals(2, tables.getUpgrade(depth).getMaxCount(ResourceLocation.fromNamespaceAndPath("othermod", "lead")));
+        assertEquals(2, tables.getUpgrade(depth).getMaxCount(Identifier.fromNamespaceAndPath("othermod", "lead")));
         assertEquals(4, tables.getUpgrade(depth).value());
     }
 
@@ -128,7 +128,7 @@ public class TestChestTables {
     public void testMissingUpgradeDisabled() {
         ChestTables tables = ChestTablesLoader.fromJson(Map.of());
         assertEquals(UpgradeProperties.DISABLED, tables.getUpgrade(ChestUpgrades.LOCK.getId()));
-        assertEquals(UpgradeProperties.DISABLED, tables.getUpgrade(ResourceLocation.fromNamespaceAndPath("othermod", "unknown")));
+        assertEquals(UpgradeProperties.DISABLED, tables.getUpgrade(Identifier.fromNamespaceAndPath("othermod", "unknown")));
     }
 
     @Test(expected = IllegalArgumentException.class)

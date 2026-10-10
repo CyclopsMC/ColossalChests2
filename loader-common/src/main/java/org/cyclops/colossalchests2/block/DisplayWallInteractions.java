@@ -4,7 +4,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -85,9 +84,9 @@ public final class DisplayWallInteractions {
             return false;
         }
         // Holding the button repeats this, only a new click takes again.
-        if (level.isClientSide && attackReleased && face != null) {
+        if (level.isClientSide() && attackReleased && face != null) {
             attackReleased = false;
-            ColossalChestsInstance.MOD.getPacketHandlerCommon().sendToServer(new ServerboundDisplayTakePacket(pos, face, player.isShiftKeyDown()));
+            ColossalChestsInstance.MOD.getPacketHandler().sendToServer(new ServerboundDisplayTakePacket(pos, face, player.isShiftKeyDown()));
         }
         return true;
     }
@@ -116,9 +115,9 @@ public final class DisplayWallInteractions {
             ItemStack stack = type.copyWithCount((int) taken);
             // Fill the held slot first.
             Inventory inventory = player.getInventory();
-            ItemStack held = inventory.getSelected();
+            ItemStack held = inventory.getSelectedItem();
             if (held.isEmpty()) {
-                inventory.setItem(inventory.selected, stack.split(stack.getMaxStackSize()));
+                inventory.setItem(inventory.getSelectedSlot(), stack.split(stack.getMaxStackSize()));
             } else if (ItemStack.isSameItemSameComponents(held, stack)) {
                 held.grow(stack.split(Math.max(0, held.getMaxStackSize() - held.getCount())).getCount());
             }
@@ -135,13 +134,13 @@ public final class DisplayWallInteractions {
      * @return The result, or null to fall back to the default wall behaviour.
      */
     @Nullable
-    public static ItemInteractionResult useItemOn(ItemStack stack, Player player, BlockEntityChestWall wall, Direction face) {
+    public static InteractionResult useItemOn(ItemStack stack, Player player, BlockEntityChestWall wall, Direction face) {
         Optional<ChestStorage> storage = getStorage(wall);
         // An empty hand is handled by useWithoutItem.
         if (stack.isEmpty() || storage.isEmpty() || wall.isFaceHidden(face)) {
             return null;
         }
-        if (!player.level().isClientSide) {
+        if (!player.level().isClientSide()) {
             if (wall.getDisplayed(face).isEmpty()) {
                 wall.setDisplayed(face, stack);
             }
@@ -154,7 +153,7 @@ public final class DisplayWallInteractions {
                 wall.updateDisplayStats(false);
             }
         }
-        return ItemInteractionResult.sidedSuccess(player.level().isClientSide);
+        return InteractionResult.SUCCESS;
     }
 
     /**
@@ -172,7 +171,7 @@ public final class DisplayWallInteractions {
             if (player instanceof ServerPlayer serverPlayer) {
                 openSettings(serverPlayer, wall);
             }
-            return InteractionResult.sidedSuccess(player.level().isClientSide);
+            return InteractionResult.SUCCESS;
         }
         if (player.isSecondaryUseActive()) {
             return InteractionResult.PASS;
@@ -187,7 +186,7 @@ public final class DisplayWallInteractions {
                 openSettings(serverPlayer, wall);
             }
         }
-        return InteractionResult.sidedSuccess(player.level().isClientSide);
+        return InteractionResult.SUCCESS;
     }
 
     private static void openSettings(ServerPlayer player, BlockEntityChestWall wall) {
@@ -200,7 +199,7 @@ public final class DisplayWallInteractions {
      */
     public static long insertAll(Player player, ChestStorage storage, ItemStack type) {
         long inserted = 0;
-        for (ItemStack stack : player.getInventory().items) {
+        for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
             if (ItemStack.isSameItemSameComponents(stack, type)) {
                 long count = storage.insert(stack, stack.getCount(), false);
                 stack.shrink((int) count);

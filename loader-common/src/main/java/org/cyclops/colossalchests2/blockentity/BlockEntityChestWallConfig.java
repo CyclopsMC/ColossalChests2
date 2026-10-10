@@ -1,6 +1,6 @@
 package org.cyclops.colossalchests2.blockentity;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import org.cyclops.colossalchests2.Reference;
 import org.cyclops.colossalchests2.api.client.ChestOverlays;
@@ -23,16 +23,16 @@ public class BlockEntityChestWallConfig<M extends IModBase> extends BlockEntityC
         super(
                 mod,
                 "chest_wall",
-                eConfig -> new BlockEntityType<>(supplier, Set.copyOf(BlockChestFunctionalWall.getFunctionalInstances()), null)
+                eConfig -> new BlockEntityType<>(supplier, Set.copyOf(BlockChestFunctionalWall.getFunctionalInstances()))
         );
     }
 
     @Override
-    public void onForgeRegistered() {
-        super.onForgeRegistered();
+    public void onRegistryRegistered() {
+        super.onRegistryRegistered();
         if (getMod().getModHelpers().getMinecraftHelpers().isClientSide()) {
             for (BlockChestFunctionalWall wall : BlockChestFunctionalWall.getFunctionalInstances()) {
-                ChestOverlays.register(wall, wall.getType() == WallType.DISPLAY ? new DisplayWallOverlay() : new FunctionalWallOverlay(ResourceLocation.fromNamespaceAndPath(Reference.MOD_ID, "block/" + wall.getType().getRegistryName() + "_icon")));
+                ChestOverlays.register(wall, wall.getType() == WallType.DISPLAY ? new DisplayWallOverlay() : new FunctionalWallOverlay(Identifier.fromNamespaceAndPath(Reference.MOD_ID, "block/" + wall.getType().getRegistryName() + "_icon")));
             }
         }
     }

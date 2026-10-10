@@ -1,7 +1,8 @@
 package org.cyclops.colossalchests2.client.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.resources.Identifier;
 
 /**
  * Drawing of vanilla style panels and slots at any size.
@@ -9,7 +10,7 @@ import net.minecraft.resources.ResourceLocation;
  */
 public final class GuiPanels {
 
-    private static final ResourceLocation PANEL_TEXTURE = ResourceLocation.withDefaultNamespace("textures/gui/container/generic_54.png");
+    private static final Identifier PANEL_TEXTURE = Identifier.withDefaultNamespace("textures/gui/container/generic_54.png");
     private static final int PANEL_TEXTURE_WIDTH = 176;
     private static final int PANEL_TEXTURE_HEIGHT = 222;
     private static final int PANEL_CORNER = 4;
@@ -23,7 +24,7 @@ public final class GuiPanels {
     /**
      * A panel with the borders of the vanilla chest texture.
      */
-    public static void drawPanel(GuiGraphics guiGraphics, int x, int y, int width, int height) {
+    public static void drawPanel(GuiGraphicsExtractor guiGraphics, int x, int y, int width, int height) {
         int c = PANEL_CORNER;
         int right = PANEL_TEXTURE_WIDTH - c;
         int bottom = PANEL_TEXTURE_HEIGHT - c;
@@ -41,16 +42,16 @@ public final class GuiPanels {
         blitPanel(guiGraphics, x + c, y + c, width - 2 * c, height - 2 * c, c + 1, c + 1, 1, 1);
     }
 
-    private static void blitPanel(GuiGraphics guiGraphics, int x, int y, int width, int height, int u, int v, int uWidth, int vHeight) {
+    private static void blitPanel(GuiGraphicsExtractor guiGraphics, int x, int y, int width, int height, int u, int v, int uWidth, int vHeight) {
         if (width > 0 && height > 0) {
-            guiGraphics.blit(PANEL_TEXTURE, x, y, width, height, u, v, uWidth, vHeight, 256, 256);
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, PANEL_TEXTURE, x, y, u, v, width, height, uWidth, vHeight, 256, 256);
         }
     }
 
     /**
      * A vanilla style slot background around an item position.
      */
-    public static void drawSlot(GuiGraphics guiGraphics, int x, int y) {
+    public static void drawSlot(GuiGraphicsExtractor guiGraphics, int x, int y) {
         guiGraphics.fill(x - 1, y - 1, x + 17, y + 17, COLOR_SLOT_SHADOW);
         guiGraphics.fill(x, y, x + 17, y + 17, COLOR_LIGHT);
         guiGraphics.fill(x, y, x + 16, y + 16, COLOR_SLOT);

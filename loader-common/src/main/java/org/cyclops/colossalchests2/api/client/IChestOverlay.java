@@ -1,7 +1,7 @@
 package org.cyclops.colossalchests2.api.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import org.cyclops.colossalchests2.api.IChest;
@@ -25,11 +25,11 @@ public interface IChestOverlay {
      * @param face The outer face being rendered.
      * @param partialTick The partial tick.
      * @param poseStack The pose stack.
-     * @param buffers The buffers.
+     * @param collector Collects what to draw.
      * @param light The packed light in front of this face.
      * @param overlay The packed overlay.
      */
     void render(IChest chest, BlockPos pos, Direction face, float partialTick,
-                PoseStack poseStack, MultiBufferSource buffers, int light, int overlay);
+                PoseStack poseStack, SubmitNodeCollector collector, int light, int overlay);
 
 }

@@ -1,6 +1,6 @@
 package org.cyclops.colossalchests2.upgrade;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.cyclops.colossalchests2.GeneralConfig;
@@ -51,7 +51,7 @@ public class TestChestUpgradeRules extends BootstrapTest {
     public void testMaxCountsByMaterial() {
         int[] depth = {0, 1, 2, 3, 4, 5, 6};
         for (int i = 0; i < ChestMaterial.BUILT_IN.size(); i++) {
-            ResourceLocation material = ChestMaterial.BUILT_IN.get(i).id();
+            Identifier material = ChestMaterial.BUILT_IN.get(i).id();
             assertEquals(material.toString(), depth[i], ChestUpgradeRules.getMaxCount(ChestUpgrades.DEPTH, material));
             assertEquals(material.toString(), 3, ChestUpgradeRules.getMaxCount(ChestUpgrades.SLOT_EXPANSION, material));
             assertEquals(material.toString(), 1, ChestUpgradeRules.getMaxCount(ChestUpgrades.LOCK, material));
@@ -73,7 +73,7 @@ public class TestChestUpgradeRules extends BootstrapTest {
 
     @Test
     public void testCanAdd() {
-        ResourceLocation copper = ChestMaterial.COPPER.id();
+        Identifier copper = ChestMaterial.COPPER.id();
         assertTrue(ChestUpgradeRules.canAdd(UpgradeSet.EMPTY, ChestUpgrades.DEPTH, copper));
         assertFalse(ChestUpgradeRules.canAdd(upgrades(ChestUpgrades.DEPTH, 1), ChestUpgrades.DEPTH, copper));
         assertFalse(ChestUpgradeRules.canAdd(UpgradeSet.EMPTY, ChestUpgrades.DEPTH, ChestMaterial.WOOD.id()));

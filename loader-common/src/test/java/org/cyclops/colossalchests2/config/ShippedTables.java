@@ -3,7 +3,7 @@ package org.cyclops.colossalchests2.config;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.cyclops.colossalchests2.Reference;
 
 import java.io.IOException;
@@ -27,14 +27,14 @@ public final class ShippedTables {
     }
 
     public static ChestTables load() {
-        Map<ResourceLocation, JsonElement> files = Maps.newHashMap();
+        Map<Identifier, JsonElement> files = Maps.newHashMap();
         try {
             Path root = Path.of(Objects.requireNonNull(ShippedTables.class.getResource("/data/" + Reference.MOD_ID + "/" + ChestTablesLoader.DIRECTORY)).toURI());
             try (Stream<Path> paths = Files.walk(root)) {
                 for (Path path : paths.filter(p -> p.toString().endsWith(".json")).toList()) {
                     String name = root.relativize(path).toString().replace('\\', '/');
                     try (Reader reader = new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8)) {
-                        files.put(ResourceLocation.fromNamespaceAndPath(Reference.MOD_ID, name.substring(0, name.length() - ".json".length())),
+                        files.put(Identifier.fromNamespaceAndPath(Reference.MOD_ID, name.substring(0, name.length() - ".json".length())),
                                 JsonParser.parseReader(reader));
                     }
                 }

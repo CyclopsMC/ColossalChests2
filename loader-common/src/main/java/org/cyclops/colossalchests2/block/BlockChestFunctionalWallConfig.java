@@ -1,5 +1,7 @@
 package org.cyclops.colossalchests2.block;
 
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.core.registries.Registries;
 import org.cyclops.cyclopscore.config.extendedconfig.BlockConfigCommon;
 import org.cyclops.cyclopscore.init.IModBase;
 
@@ -13,7 +15,7 @@ public class BlockChestFunctionalWallConfig<M extends IModBase> extends BlockCon
         super(
                 mod,
                 type.getRegistryName(),
-                eConfig -> new BlockChestFunctionalWall(BuiltInMaterial.IRON.createProperties(), type),
+                (eConfig, props) -> new BlockChestFunctionalWall(BuiltInMaterial.IRON.createProperties().setId(ResourceKey.create(Registries.BLOCK, eConfig.getResourceKey().identifier())), type),
                 getDefaultItemConstructor(mod)
         );
     }

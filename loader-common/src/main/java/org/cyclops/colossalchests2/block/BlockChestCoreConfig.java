@@ -1,5 +1,7 @@
 package org.cyclops.colossalchests2.block;
 
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.Block;
 import org.cyclops.colossalchests2.api.ChestMaterial;
 import org.cyclops.cyclopscore.config.extendedconfig.BlockConfigCommon;
@@ -22,8 +24,8 @@ public class BlockChestCoreConfig<M extends IModBase> extends BlockConfigCommon<
         super(
                 mod,
                 "chest_core_" + material.getName(),
-                eConfig -> new BlockChestCore(properties.get(), material),
-                getDefaultItemConstructor(mod)
+                (eConfig, props) -> new BlockChestCore(properties.get().setId(ResourceKey.create(Registries.BLOCK, eConfig.getResourceKey().identifier())), material),
+                ItemBlockTooltip.constructor()
         );
     }
 

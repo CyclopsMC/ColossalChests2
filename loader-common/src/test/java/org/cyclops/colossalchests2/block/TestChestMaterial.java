@@ -3,7 +3,7 @@ package org.cyclops.colossalchests2.block;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import net.minecraft.network.chat.contents.TranslatableContents;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.cyclops.colossalchests2.api.ChestMaterial;
 import org.junit.Test;
 
@@ -18,7 +18,7 @@ import static org.junit.Assert.*;
  */
 public class TestChestMaterial {
 
-    private final Map<ChestMaterial, ResourceLocation> after = Maps.newHashMap();
+    private final Map<ChestMaterial, Identifier> after = Maps.newHashMap();
 
     public TestChestMaterial() {
         for (int i = 1; i < ChestMaterial.BUILT_IN.size(); i++) {
@@ -30,8 +30,8 @@ public class TestChestMaterial {
         return material(namespace, path, after.id());
     }
 
-    private ChestMaterial material(String namespace, String path, ResourceLocation after) {
-        ChestMaterial material = new ChestMaterial(ResourceLocation.fromNamespaceAndPath(namespace, path));
+    private ChestMaterial material(String namespace, String path, Identifier after) {
+        ChestMaterial material = new ChestMaterial(Identifier.fromNamespaceAndPath(namespace, path));
         this.after.put(material, after);
         return material;
     }
@@ -80,14 +80,14 @@ public class TestChestMaterial {
 
     @Test
     public void testWithoutAfterOrUnknownAfterLast() {
-        ChestMaterial ruby = material("othermod", "ruby", (ResourceLocation) null);
-        ChestMaterial jade = material("othermod", "jade", ResourceLocation.fromNamespaceAndPath("missingmod", "tin"));
+        ChestMaterial ruby = material("othermod", "ruby", (Identifier) null);
+        ChestMaterial jade = material("othermod", "jade", Identifier.fromNamespaceAndPath("missingmod", "tin"));
         assertEquals(with(ChestMaterial.NETHERITE, jade, ruby), order(ruby, jade));
     }
 
     @Test
     public void testLoopLast() {
-        ResourceLocation rubyId = ResourceLocation.fromNamespaceAndPath("othermod", "ruby");
+        Identifier rubyId = Identifier.fromNamespaceAndPath("othermod", "ruby");
         ChestMaterial jade = material("othermod", "jade", rubyId);
         ChestMaterial ruby = material("othermod", "ruby", jade);
         assertEquals(with(ChestMaterial.NETHERITE, jade, ruby), order(ruby, jade));
@@ -105,7 +105,7 @@ public class TestChestMaterial {
     @Test
     public void testDisplayNameUsesNamespace() {
         assertEquals("material.othermod.ruby",
-                ((TranslatableContents) new ChestMaterial(ResourceLocation.fromNamespaceAndPath("othermod", "ruby")).getDisplayName().getContents()).getKey());
+                ((TranslatableContents) new ChestMaterial(Identifier.fromNamespaceAndPath("othermod", "ruby")).getDisplayName().getContents()).getKey());
         assertEquals("material.colossalchests2.iron", ((TranslatableContents) ChestMaterial.IRON.getDisplayName().getContents()).getKey());
     }
 

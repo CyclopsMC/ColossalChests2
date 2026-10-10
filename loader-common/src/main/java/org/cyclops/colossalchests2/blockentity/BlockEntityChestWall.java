@@ -1,13 +1,15 @@
 package org.cyclops.colossalchests2.blockentity;
 
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import com.google.common.collect.Maps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -173,7 +175,7 @@ public class BlockEntityChestWall extends BlockEntity implements MenuProvider {
      * read the same value.
      */
     public void updateRedstoneSignal() {
-        if (level == null || level.isClientSide) {
+        if (level == null || level.isClientSide()) {
             return;
         }
         int signal = getComparatorSignal();
@@ -329,7 +331,7 @@ public class BlockEntityChestWall extends BlockEntity implements MenuProvider {
      * @param force If clients are updated even without changes.
      */
     public void updateDisplayStats(boolean force) {
-        if (level == null || level.isClientSide) {
+        if (level == null || level.isClientSide()) {
             return;
         }
         Optional<BlockEntityChestCore> core = getCore();
@@ -360,7 +362,7 @@ public class BlockEntityChestWall extends BlockEntity implements MenuProvider {
 
     private void onSettingsChanged() {
         setChanged();
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             BlockEntityChestCore.capabilityInvalidator.invalidate(level, worldPosition);
             onCapabilitiesChanged();
         }
@@ -373,83 +375,76 @@ public class BlockEntityChestWall extends BlockEntity implements MenuProvider {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        tag.putString("mode", mode.name());
-        ContainerHelper.saveAllItems(tag, settings.getItems(), registries);
-        saveDisplay(tag, registries, false);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        output.putString("mode", mode.name());
+        ContainerHelper.saveAllItems(output, settings.getItems());
+        saveDisplay(output, false);
         if (magnetRadius >= 0) {
-            tag.putInt("magnet_radius", magnetRadius);
+            output.putInt("magnet_radius", magnetRadius);
         }
         if (!redstoneTarget.getItem(0).isEmpty()) {
-            tag.put("redstone_target", redstoneTarget.getItem(0).save(registries));
+            output.store("redstone_target", ItemStack.CODEC, redstoneTarget.getItem(0));
         }
-        tag.putInt("redstone_signal", redstoneSignal);
+        output.putInt("redstone_signal", redstoneSignal);
     }
 
-    private void saveDisplay(CompoundTag tag, HolderLookup.Provider registries, boolean withStats) {
-        ListTag faces = new ListTag();
+    private void saveDisplay(ValueOutput output, boolean withStats) {
+        ValueOutput.ValueOutputList faces = output.childrenList("display");
         for (Direction face : Direction.values()) {
             ItemStack type = displayed[face.ordinal()];
             if (!type.isEmpty() || (withStats && !displayStats[face.ordinal()].equals(DisplayStats.EMPTY))) {
-                CompoundTag faceTag = new CompoundTag();
-                faceTag.putString("face", face.getSerializedName());
+                ValueOutput faceOutput = faces.addChild();
+                faceOutput.putString("face", face.getSerializedName());
                 if (!type.isEmpty()) {
-                    faceTag.put("item", type.save(registries));
+                    faceOutput.store("item", ItemStack.CODEC, type);
                 }
                 if (withStats) {
-                    faceTag.put("stats", displayStats[face.ordinal()].toTag());
+                    faceOutput.store("stats", DisplayStats.CODEC, displayStats[face.ordinal()]);
                 }
-                faces.add(faceTag);
             }
         }
-        tag.put("display", faces);
-        tag.putInt("disabled_options", disabledOptions);
+        output.putInt("disabled_options", disabledOptions);
     }
 
-    private void loadDisplay(CompoundTag tag, HolderLookup.Provider registries) {
+    private void loadDisplay(ValueInput input) {
         Arrays.fill(displayed, ItemStack.EMPTY);
         Arrays.fill(displayStats, DisplayStats.EMPTY);
-        for (Tag entry : tag.getList("display", Tag.TAG_COMPOUND)) {
-            CompoundTag faceTag = (CompoundTag) entry;
-            Direction face = Direction.byName(faceTag.getString("face"));
+        for (ValueInput faceInput : input.childrenListOrEmpty("display")) {
+            Direction face = Direction.byName(faceInput.getStringOr("face", ""));
             if (face != null) {
-                displayed[face.ordinal()] = faceTag.contains("item")
-                        ? ItemStack.parseOptional(registries, faceTag.getCompound("item")) : ItemStack.EMPTY;
-                if (faceTag.contains("stats")) {
-                    displayStats[face.ordinal()] = DisplayStats.fromTag(faceTag.getCompound("stats"));
-                }
+                displayed[face.ordinal()] = faceInput.read("item", ItemStack.CODEC).orElse(ItemStack.EMPTY);
+                displayStats[face.ordinal()] = faceInput.read("stats", DisplayStats.CODEC).orElse(DisplayStats.EMPTY);
             }
         }
-        disabledOptions = tag.getInt("disabled_options");
+        disabledOptions = input.getIntOr("disabled_options", 0);
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
         try {
-            mode = WallAccess.Mode.valueOf(tag.getString("mode"));
+            mode = WallAccess.Mode.valueOf(input.getStringOr("mode", WallAccess.Mode.BOTH.name()));
         } catch (IllegalArgumentException e) {
             mode = WallAccess.Mode.BOTH;
         }
         NonNullList<ItemStack> items = NonNullList.withSize(settings.getContainerSize(), ItemStack.EMPTY);
-        ContainerHelper.loadAllItems(tag, items, registries);
+        ContainerHelper.loadAllItems(input, items);
         for (int i = 0; i < items.size(); i++) {
             settings.getItems().set(i, items.get(i));
         }
-        loadDisplay(tag, registries);
-        magnetRadius = tag.contains("magnet_radius") ? tag.getInt("magnet_radius") : -1;
-        redstoneTarget.getItems().set(0, tag.contains("redstone_target")
-                ? ItemStack.parseOptional(registries, tag.getCompound("redstone_target")) : ItemStack.EMPTY);
-        redstoneSignal = tag.getInt("redstone_signal");
+        loadDisplay(input);
+        magnetRadius = input.getIntOr("magnet_radius", -1);
+        redstoneTarget.getItems().set(0, input.read("redstone_target", ItemStack.CODEC).orElse(ItemStack.EMPTY));
+        redstoneSignal = input.getIntOr("redstone_signal", 0);
     }
 
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         // Clients only need what a Display wall shows.
-        CompoundTag tag = new CompoundTag();
-        saveDisplay(tag, registries, true);
-        return tag;
+        TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registries);
+        saveDisplay(output, true);
+        return output.buildResult();
     }
 
     @Nullable

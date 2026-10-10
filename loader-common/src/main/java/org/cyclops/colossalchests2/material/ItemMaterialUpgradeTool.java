@@ -1,13 +1,14 @@
 package org.cyclops.colossalchests2.material;
 
+import java.util.function.Consumer;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -25,7 +26,6 @@ import org.cyclops.colossalchests2.blockentity.BlockEntityChestCore;
 import org.cyclops.colossalchests2.inventory.ContainerMaterialUpgradeTool;
 import org.cyclops.cyclopscore.helper.IModHelpers;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -41,7 +41,7 @@ public class ItemMaterialUpgradeTool extends Item {
     }
 
     public static Optional<ChestMaterial> getTarget(ItemStack stack) {
-        ResourceLocation id = stack.get(RegistryEntries.COMPONENT_MATERIAL_TARGET.value());
+        Identifier id = stack.get(RegistryEntries.COMPONENT_MATERIAL_TARGET.value());
         return id == null ? Optional.empty() : ChestMaterial.byId(id);
     }
 
@@ -58,7 +58,7 @@ public class ItemMaterialUpgradeTool extends Item {
         if (player == null || !(state.getBlock() instanceof IChestMember || state.getBlock() instanceof BlockChestCore)) {
             return InteractionResult.PASS;
         }
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         Optional<ChestMaterial> target = getTarget(context.getItemInHand());
@@ -71,25 +71,25 @@ public class ItemMaterialUpgradeTool extends Item {
         } else {
             result = MaterialChanges.change(player, core.get(), target.get());
         }
-        player.displayClientMessage(result.message(), true);
+        player.sendOverlayMessage(result.message());
         return result.success() ? InteractionResult.CONSUME : InteractionResult.FAIL;
     }
 
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (player instanceof ServerPlayer serverPlayer) {
             IModHelpers.get().getMinecraftHelpers().openMenu(serverPlayer,
                     new SimpleMenuProvider((id, inventory, p) -> new ContainerMaterialUpgradeTool(id, inventory, hand), stack.getHoverName()),
                     buf -> buf.writeEnum(hand));
         }
-        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+        return InteractionResult.SUCCESS;
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
-        tooltip.add(getTarget(stack)
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, Consumer<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, display, tooltip, flag);
+        tooltip.accept(getTarget(stack)
                 .map(material -> Component.translatable("item.colossalchests2.material_upgrade_tool.target", material.getDisplayName()))
                 .orElse(Component.translatable("item.colossalchests2.material_upgrade_tool.no_target"))
                 .withStyle(ChatFormatting.GRAY));

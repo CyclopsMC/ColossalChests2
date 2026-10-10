@@ -1,7 +1,7 @@
 package org.cyclops.colossalchests2.config;
 
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * {@link ChestTablesReloadListener} with the id Fabric needs.
@@ -10,7 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 public class ChestTablesReloadListenerFabric extends ChestTablesReloadListener implements IdentifiableResourceReloadListener {
 
     @Override
-    public ResourceLocation getFabricId() {
+    public Identifier getFabricId() {
         return ID;
     }
 }

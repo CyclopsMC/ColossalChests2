@@ -2,12 +2,8 @@
   "type": "minecraft:crafting_shapeless",
   "category": "building",
   "ingredients": [
-    {
-      "tag": "colossalchests2:chest_walls"
-    },
-    {
-      "item": "minecraft:item_frame"
-    }
+    "#colossalchests2:chest_walls",
+    "minecraft:item_frame"
   ],
   "result": {
     "id": "colossalchests2:chest_wall_display",

@@ -1,15 +1,13 @@
 package org.cyclops.colossalchests2.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -37,11 +35,11 @@ import java.util.List;
  */
 public class DisplayWallOverlay implements IChestOverlay {
 
-    private static final ResourceLocation PANEL_TEXTURE = ResourceLocation.fromNamespaceAndPath(Reference.MOD_ID, "block/display_panel");
-    private static final ResourceLocation HIDDEN_ICON = ResourceLocation.fromNamespaceAndPath(Reference.MOD_ID, "block/chest_wall_display_icon");
+    private static final Identifier PANEL_TEXTURE = Identifier.fromNamespaceAndPath(Reference.MOD_ID, "block/display_panel");
+    private static final Identifier HIDDEN_ICON = Identifier.fromNamespaceAndPath(Reference.MOD_ID, "block/chest_wall_display_icon");
     private static final float ICON_MIN = 3F / 16F;
     private static final float ICON_MAX = 13F / 16F;
-    private static final ResourceLocation BAR_TEXTURE = ResourceLocation.fromNamespaceAndPath(Reference.MOD_ID, "block/display_bar");
+    private static final Identifier BAR_TEXTURE = Identifier.fromNamespaceAndPath(Reference.MOD_ID, "block/display_bar");
     private static final int COLOR_TEXT = 0xFFFFFF;
     private static final int COLOR_BAR_BACKGROUND = 0xFF101010;
     private static final int COLOR_BAR = 0xFF40C040;
@@ -60,87 +58,85 @@ public class DisplayWallOverlay implements IChestOverlay {
 
     @Override
     public void render(IChest chest, BlockPos pos, Direction face, float partialTick,
-                       PoseStack poseStack, MultiBufferSource buffers, int light, int overlay) {
+                       PoseStack poseStack, SubmitNodeCollector collector, int light, int overlay) {
         Level level = chest.getLevel();
         if (!(level.getBlockEntity(pos) instanceof BlockEntityChestWall wall)) {
             return;
         }
-        TextureAtlas atlas = Minecraft.getInstance().getModelManager().getAtlas(TextureAtlas.LOCATION_BLOCKS);
         if (wall.isFaceHidden(face)) {
             // Like other functional walls, so its settings can be found again.
             if (ChestOverlayHelpers.isRevealingMembers()) {
-                ChestOverlayHelpers.renderSprite(poseStack, buffers, atlas.getSprite(HIDDEN_ICON), ICON_MIN, ICON_MIN, ICON_MAX, ICON_MAX,
+                ChestOverlayHelpers.renderSprite(poseStack, collector, ChestOverlayHelpers.getBlockSprite(HIDDEN_ICON), ICON_MIN, ICON_MIN, ICON_MAX, ICON_MAX,
                         light, overlay);
             }
             return;
         }
         poseStack.pushPose();
-        renderPanel(chest, atlas, poseStack, buffers, light, overlay);
+        renderPanel(chest, poseStack, collector, light, overlay);
         ItemStack displayed = wall.getDisplayed(face);
         if (!displayed.isEmpty()) {
             DisplayStats stats = wall.getDisplayStats(face);
             poseStack.translate(0, 0, LAYER);
-            renderDisplayedItem(poseStack, buffers, level, displayed, light);
+            renderDisplayedItem(poseStack, collector, level, displayed, light);
             poseStack.translate(0, 0, LAYER);
             if (wall.isEnabled(face, DisplayOption.COUNT)) {
                 String count = IModHelpers.get().getGuiHelpers().quantityToScaledString(stats.count());
-                ChestOverlayHelpers.renderText(poseStack, buffers, count, 0.5F, TEXT_Y0, TEXT_HEIGHT, COLOR_TEXT, light);
+                ChestOverlayHelpers.renderText(poseStack, collector, count, 0.5F, TEXT_Y0, TEXT_HEIGHT, COLOR_TEXT, light);
             }
             if (wall.isEnabled(face, DisplayOption.FILL_LEVEL)) {
-                renderFillBar(atlas.getSprite(BAR_TEXTURE), stats.getFillLevel(), poseStack, buffers, light, overlay);
+                renderFillBar(ChestOverlayHelpers.getBlockSprite(BAR_TEXTURE), stats.getFillLevel(), poseStack, collector, light, overlay);
             }
             if (wall.isEnabled(face, DisplayOption.UPGRADE_INDICATORS)) {
-                renderIndicators(atlas, stats, poseStack, buffers, light, overlay);
+                renderIndicators(stats, poseStack, collector, light, overlay);
             }
         }
         poseStack.popPose();
     }
 
-    private void renderPanel(IChest chest, TextureAtlas atlas, PoseStack poseStack, MultiBufferSource buffers,
+    private void renderPanel(IChest chest, PoseStack poseStack, SubmitNodeCollector collector,
                              int light, int overlay) {
         // A frame of the chest's material, so the panel looks built into it.
         ChestMaterial material = chest.getChestMaterial();
         if (material != null) {
-            ResourceLocation frame = material.id().withPrefix("block/chest_wall_");
-            TextureAtlasSprite frameSprite = atlas.getSprite(frame);
-            ChestOverlayHelpers.renderSprite(poseStack, buffers, frameSprite, 0, 0, 1, 1, light, overlay);
-            ChestOverlayHelpers.renderSides(poseStack, buffers, frameSprite, RenderChestCore.OVERLAY_OFFSET, light, overlay);
+            Identifier frame = material.id().withPrefix("block/chest_wall_");
+            TextureAtlasSprite frameSprite = ChestOverlayHelpers.getBlockSprite(frame);
+            ChestOverlayHelpers.renderSprite(poseStack, collector, frameSprite, 0, 0, 1, 1, light, overlay);
+            ChestOverlayHelpers.renderSides(poseStack, collector, frameSprite, RenderChestCore.OVERLAY_OFFSET, light, overlay);
             poseStack.translate(0, 0, LAYER);
         }
         // The panel texture has a transparent rim, so the frame shows around it.
-        ChestOverlayHelpers.renderSprite(poseStack, buffers, atlas.getSprite(PANEL_TEXTURE), 0, 0, 1, 1, light, overlay);
+        ChestOverlayHelpers.renderSprite(poseStack, collector, ChestOverlayHelpers.getBlockSprite(PANEL_TEXTURE), 0, 0, 1, 1, light, overlay);
     }
 
-    private void renderDisplayedItem(PoseStack poseStack, MultiBufferSource buffers, Level level, ItemStack stack, int light) {
-        BakedModel model = Minecraft.getInstance().getItemRenderer().getModel(stack, level, null, 0);
+    private void renderDisplayedItem(PoseStack poseStack, SubmitNodeCollector collector, Level level, ItemStack stack, int light) {
         poseStack.pushPose();
         poseStack.translate(0.5F, ITEM_Y, 0);
-        if (GeneralConfig.displayItemFrameStyle && model.isGui3d()) {
+        ItemStackRenderState gui = ChestOverlayHelpers.getItemRenderState(level, stack, ItemDisplayContext.GUI);
+        if (GeneralConfig.displayItemFrameStyle && gui.usesBlockLight()) {
             // Like an item frame: blocks show their front face, with some depth.
             poseStack.scale(ITEM_SIZE * 1.6F, ITEM_SIZE * 1.6F, ITEM_SIZE * 0.4F);
-            Minecraft.getInstance().getItemRenderer().render(stack, ItemDisplayContext.FIXED, false, poseStack, buffers, light,
-                    OverlayTexture.NO_OVERLAY, model);
+            ChestOverlayHelpers.getItemRenderState(level, stack, ItemDisplayContext.FIXED)
+                    .submit(poseStack, collector, light, OverlayTexture.NO_OVERLAY, 0);
         } else {
             // Like drawers: the inventory icon, flattened towards the face so blocks do not stick out.
             poseStack.scale(ITEM_SIZE, ITEM_SIZE, 0.001F);
-            Minecraft.getInstance().getItemRenderer().render(stack, ItemDisplayContext.GUI, false, poseStack, buffers, light,
-                    OverlayTexture.NO_OVERLAY, model);
+            gui.submit(poseStack, collector, light, OverlayTexture.NO_OVERLAY, 0);
         }
         poseStack.popPose();
     }
 
-    private void renderFillBar(TextureAtlasSprite bar, float fill, PoseStack poseStack, MultiBufferSource buffers, int light, int overlay) {
-        ChestOverlayHelpers.renderSprite(poseStack, buffers, bar, BAR_X0, BAR_Y0, BAR_X1, BAR_Y1, light, overlay, COLOR_BAR_BACKGROUND);
+    private void renderFillBar(TextureAtlasSprite bar, float fill, PoseStack poseStack, SubmitNodeCollector collector, int light, int overlay) {
+        ChestOverlayHelpers.renderSprite(poseStack, collector, bar, BAR_X0, BAR_Y0, BAR_X1, BAR_Y1, light, overlay, COLOR_BAR_BACKGROUND);
         if (fill > 0) {
             poseStack.pushPose();
             poseStack.translate(0, 0, LAYER);
-            ChestOverlayHelpers.renderSprite(poseStack, buffers, bar, BAR_X0, BAR_Y0, BAR_X0 + (BAR_X1 - BAR_X0) * fill, BAR_Y1,
+            ChestOverlayHelpers.renderSprite(poseStack, collector, bar, BAR_X0, BAR_Y0, BAR_X0 + (BAR_X1 - BAR_X0) * fill, BAR_Y1,
                     light, overlay, fill >= 1 ? COLOR_BAR_FULL : COLOR_BAR);
             poseStack.popPose();
         }
     }
 
-    private void renderIndicators(TextureAtlas atlas, DisplayStats stats, PoseStack poseStack, MultiBufferSource buffers,
+    private void renderIndicators(DisplayStats stats, PoseStack poseStack, SubmitNodeCollector collector,
                                   int light, int overlay) {
         // Flat icons of the upgrades that affect the shown item, in the top right corner of the panel.
         List<ChestUpgrade> indicators = new ArrayList<>();
@@ -156,9 +152,9 @@ public class DisplayWallOverlay implements IChestOverlay {
         float x1 = PANEL_MAX - 0.75F / 16F;
         float y1 = PANEL_MAX - 0.75F / 16F;
         for (ChestUpgrade upgrade : indicators) {
-            TextureAtlasSprite sprite = atlas.getSprite(ResourceLocation.fromNamespaceAndPath(Reference.MOD_ID,
+            TextureAtlasSprite sprite = ChestOverlayHelpers.getItemSprite(Identifier.fromNamespaceAndPath(Reference.MOD_ID,
                     "item/upgrade_" + upgrade.getId().getPath()));
-            ChestOverlayHelpers.renderSprite(poseStack, buffers, sprite, x1 - INDICATOR_SIZE, y1 - INDICATOR_SIZE, x1, y1, light, overlay);
+            ChestOverlayHelpers.renderSprite(poseStack, collector, sprite, x1 - INDICATOR_SIZE, y1 - INDICATOR_SIZE, x1, y1, light, overlay);
             x1 -= INDICATOR_SIZE;
         }
     }

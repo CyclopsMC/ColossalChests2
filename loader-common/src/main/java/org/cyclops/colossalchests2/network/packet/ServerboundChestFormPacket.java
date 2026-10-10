@@ -2,7 +2,7 @@ package org.cyclops.colossalchests2.network.packet;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -17,7 +17,7 @@ import org.cyclops.cyclopscore.network.PacketBase;
  */
 public class ServerboundChestFormPacket extends PacketBase<ServerboundChestFormPacket> {
 
-    public static final Type<ServerboundChestFormPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Reference.MOD_ID, "chest_form"));
+    public static final Type<ServerboundChestFormPacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Reference.MOD_ID, "chest_form"));
     public static final StreamCodec<RegistryFriendlyByteBuf, ServerboundChestFormPacket> CODEC = getCodec(ServerboundChestFormPacket::new);
 
     private int containerId;

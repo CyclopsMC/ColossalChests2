@@ -5,14 +5,18 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
@@ -71,8 +75,8 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
     private static final int FORM_CELL_WIDTH = 24;
     private static final int FORM_ROW_HEIGHT = 31;
     private static final int COLOR_VOID_RING = 0xFF9650C8;
-    private static final int COLOR_COUNT = 0xFFFFFF;
-    private static final int COLOR_COUNT_CAPPED = 0xFFFF55;
+    private static final int COLOR_COUNT = 0xFFFFFFFF;
+    private static final int COLOR_COUNT_CAPPED = 0xFFFFFF55;
     private static final int COLOR_WARNING = 0xFFAA0000;
     private static final int SETTINGS_WIDTH = 16;
     private static final int SETTINGS_HEIGHT = 15;
@@ -81,9 +85,11 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
     private static final int SEARCH_HEIGHT = 12;
     private static final int UPGRADE_PANEL_X = ContainerChest.UPGRADE_SLOT_X - 7;
     private static final int UPGRADE_PANEL_Y = ContainerChest.UPGRADE_SLOT_Y - 4;
+    private static final Identifier SLOT_HIGHLIGHT_FRONT = Identifier.withDefaultNamespace("container/slot_highlight_front");
 
     private final ChestLayout layout;
     private final List<Button> settingsButtons = Lists.newArrayList();
+    private final Set<Button> tooltippedButtons = Sets.newHashSet();
     private EditBox searchField;
     private boolean settingsOpen;
 
@@ -95,16 +101,15 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
     private DragPreview dragPreview;
 
     public ContainerScreenChest(ContainerChest menu, Inventory inventory, Component title) {
-        super(menu, inventory, title);
+        super(menu, inventory, title, menu.getLayout().getWidth(), menu.getLayout().getHeight());
         this.layout = menu.getLayout();
-        this.imageWidth = layout.getWidth();
-        this.imageHeight = layout.getHeight();
     }
 
     @Override
     protected void init() {
         super.init();
         settingsButtons.clear();
+        tooltippedButtons.clear();
 
         // Borderless on a sunken field, like the creative search tab.
         String query = searchField != null ? searchField.getValue() : "";
@@ -112,7 +117,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
                 Component.translatable("gui.colossalchests2.search"));
         searchField.setMaxLength(ContainerChest.MAX_QUERY_LENGTH);
         searchField.setBordered(false);
-        searchField.setTextColor(0xFFFFFF);
+        searchField.setTextColor(0xFFFFFFFF);
         searchField.setValue(query);
         addRenderableWidget(searchField);
 
@@ -158,8 +163,8 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
         updateUpgradeButton(settingsButtons.get(3), hasVoidUpgrade(), "clear_voids", "requires_void_upgrade");
     }
 
-    private static void updateUpgradeButton(Button button, boolean enabled, String key, String disabledKey) {
-        if (button.active != enabled || button.getTooltip() == null) {
+    private void updateUpgradeButton(Button button, boolean enabled, String key, String disabledKey) {
+        if (button.active != enabled || tooltippedButtons.add(button)) {
             button.active = enabled;
             button.setTooltip(Tooltip.create(Component.translatable("gui.colossalchests2." + (enabled ? key + ".info" : disabledKey))));
         }
@@ -177,24 +182,24 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         // Like vanilla, the cursor shows what a drag would leave on it.
         dragPreview = getDragPreview();
         if (dragPreview != null) {
             menu.setCarried(dragPreview.remainder());
         }
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
         if (dragPreview != null) {
             menu.setCarried(dragPreview.cursor());
         }
         renderChestTooltip(guiGraphics, mouseX, mouseY);
         renderInfoTooltip(guiGraphics, mouseX, mouseY);
         renderUpgradeSlotTooltip(guiGraphics, mouseX, mouseY);
-        renderTooltip(guiGraphics, mouseX, mouseY);
     }
 
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
         // The upgrade column sticks out on the left, behind the main panel.
         if (menu.getUpgradeSlotCount() > 0) {
             GuiPanels.drawPanel(guiGraphics, leftPos + UPGRADE_PANEL_X, topPos + UPGRADE_PANEL_Y, -UPGRADE_PANEL_X + 4, getUpgradePanelHeight());
@@ -232,11 +237,11 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
             if (dragPreview != null && dragPreview.added().containsKey(slot)) {
                 // What the slot would hold when releasing the drag now, yellow when full.
                 guiGraphics.fill(x, y, x + 16, y + 16, COLOR_DRAG_PREVIEW);
-                guiGraphics.renderItem(dragPreview.cursor(), x, y);
+                guiGraphics.item(dragPreview.cursor(), x, y);
                 drawCount(guiGraphics, menu.getChestSlotAmount(slot, dragPreview.cursor()) + dragPreview.added().get(slot), x, y,
                         dragPreview.capped().contains(slot) ? COLOR_COUNT_CAPPED : COLOR_COUNT);
             } else if (!deepSlot.isEmpty()) {
-                guiGraphics.renderItem(deepSlot.getPrototype(), x, y);
+                guiGraphics.item(deepSlot.getPrototype(), x, y);
                 getCompressedFamily(deepSlot).ifPresent(family -> drawFormBadge(guiGraphics, family.get(getChosenForm(deepSlot, family)).item(), x, y));
                 if (deepSlot.getCount() > 0) {
                     // A "+" when smaller forms are left over.
@@ -247,7 +252,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
                     drawCount(guiGraphics, "<1", x, y, COLOR_COUNT);
                 } else {
                     // A slot reserved by a lock shows a ghost of its item.
-                    guiGraphics.fill(x, y, x + 16, y + 16, 300, COLOR_GHOST);
+                    guiGraphics.fill(x, y, x + 16, y + 16, COLOR_GHOST);
                 }
             }
             if (deepSlot.isLocked()) {
@@ -257,13 +262,13 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
                 drawVoidMark(guiGraphics, x, y);
             }
             if (menu.isChestSlotOverCapacity(slot)) {
-                guiGraphics.fill(x, y, x + 16, y + 16, 400, COLOR_OVER_CAPACITY);
+                guiGraphics.fill(x, y, x + 16, y + 16, COLOR_OVER_CAPACITY);
             }
             if (!match) {
-                guiGraphics.fill(x, y, x + 16, y + 16, 400, COLOR_SEARCH_MISS);
+                guiGraphics.fill(x, y, x + 16, y + 16, COLOR_SEARCH_MISS);
             }
             if (slot == hovered) {
-                renderSlotHighlight(guiGraphics, x, y, 0);
+                guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, SLOT_HIGHLIGHT_FRONT, x - 4, y - 4, 24, 24);
             }
         }
     }
@@ -271,62 +276,50 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
     /**
      * A small padlock in the top left corner of a slot.
      */
-    private static void drawPadlock(GuiGraphics guiGraphics, int x, int y) {
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate(0, 0, 350);
+    private static void drawPadlock(GuiGraphicsExtractor guiGraphics, int x, int y) {
         guiGraphics.fill(x, y + 3, x + 7, y + 9, COLOR_OUTLINE);
         guiGraphics.fill(x + 1, y, x + 6, y + 4, COLOR_OUTLINE);
         guiGraphics.fill(x + 2, y + 1, x + 5, y + 4, COLOR_PADLOCK_SHACKLE);
         guiGraphics.fill(x + 3, y + 2, x + 4, y + 4, COLOR_OUTLINE);
         guiGraphics.fill(x + 1, y + 4, x + 6, y + 8, COLOR_PADLOCK);
         guiGraphics.fill(x + 3, y + 5, x + 4, y + 7, COLOR_OUTLINE);
-        guiGraphics.pose().popPose();
     }
 
     /**
      * A small dark swirl in the top right corner of a slot.
      */
-    private static void drawVoidMark(GuiGraphics guiGraphics, int x, int y) {
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate(0, 0, 350);
+    private static void drawVoidMark(GuiGraphicsExtractor guiGraphics, int x, int y) {
         int left = x + 16 - 7;
         guiGraphics.fill(left + 1, y, left + 6, y + 7, COLOR_OUTLINE);
         guiGraphics.fill(left, y + 1, left + 7, y + 6, COLOR_OUTLINE);
         guiGraphics.fill(left + 1, y + 1, left + 6, y + 6, COLOR_VOID);
         guiGraphics.fill(left + 2, y + 2, left + 5, y + 5, COLOR_VOID_RING);
         guiGraphics.fill(left + 3, y + 3, left + 4, y + 4, COLOR_OUTLINE);
-        guiGraphics.pose().popPose();
     }
 
     /**
      * The form that clicks take, small in the bottom left corner of a compressed slot, on the picker's purple.
      */
-    private static void drawFormBadge(GuiGraphics guiGraphics, Item form, int x, int y) {
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate(0, 0, 200);
+    private static void drawFormBadge(GuiGraphicsExtractor guiGraphics, Item form, int x, int y) {
         guiGraphics.fill(x, y + 6, x + 10, y + 16, COLOR_OUTLINE);
         guiGraphics.fill(x + 1, y + 7, x + 9, y + 15, COLOR_FORM_CHOSEN_INSIDE);
-        guiGraphics.pose().popPose();
-        guiGraphics.pose().pushPose();
+        guiGraphics.pose().pushMatrix();
         // Above the slot's item, below the count.
-        guiGraphics.pose().translate(x + 1, y + 7, 100);
-        guiGraphics.pose().scale(0.5F, 0.5F, 1F);
-        guiGraphics.renderItem(new ItemStack(form), 0, 0);
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().translate(x + 1, y + 7);
+        guiGraphics.pose().scale(0.5F, 0.5F);
+        guiGraphics.item(new ItemStack(form), 0, 0);
+        guiGraphics.pose().popMatrix();
     }
 
-    private void drawCount(GuiGraphics guiGraphics, long count, int x, int y, int color) {
+    private void drawCount(GuiGraphicsExtractor guiGraphics, long count, int x, int y, int color) {
         drawCount(guiGraphics, IModHelpers.get().getGuiHelpers().quantityToScaledString(count), x, y, color);
     }
 
-    private void drawCount(GuiGraphics guiGraphics, String text, int x, int y, int color) {
+    private void drawCount(GuiGraphicsExtractor guiGraphics, String text, int x, int y, int color) {
         float scale = 0.5F;
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate(0, 0, 300);
         IModHelpers.get().getRenderHelpers().drawScaledString(guiGraphics, font, text,
                 x + 16 - Math.round(font.width(text) * scale), y + 16 - Math.round(font.lineHeight * scale) + 1,
                 scale, color, true, Font.DisplayMode.NORMAL);
-        guiGraphics.pose().popPose();
     }
 
     /**
@@ -375,11 +368,11 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
     /**
      * Slots in use, and capacity per slot, where vanilla shows the inventory label.
      */
-    private void drawInfo(GuiGraphics guiGraphics) {
+    private void drawInfo(GuiGraphicsExtractor guiGraphics) {
         int y = getInfoY();
-        guiGraphics.drawString(font, getSlotsInfo(), getGridLeft() + 1, y, getOverCapacityCount() > 0 ? COLOR_WARNING : COLOR_TEXT, false);
+        guiGraphics.text(font, getSlotsInfo(), getGridLeft() + 1, y, getOverCapacityCount() > 0 ? COLOR_WARNING : COLOR_TEXT, false);
         Component capacity = getCapacityInfo();
-        guiGraphics.drawString(font, capacity, getGridLeft() + getGridWidth() - font.width(capacity), y, COLOR_TEXT, false);
+        guiGraphics.text(font, capacity, getGridLeft() + getGridWidth() - font.width(capacity), y, COLOR_TEXT, false);
     }
 
     private int getFullSlots() {
@@ -413,7 +406,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
         return count;
     }
 
-    private void renderInfoTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderInfoTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         int x = mouseX - leftPos;
         int y = mouseY - topPos - getInfoY();
         if (y < -1 || y > font.lineHeight) {
@@ -429,7 +422,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
             if (overCapacity > 0) {
                 lines.add(Component.translatable("gui.colossalchests2.over_capacity", formatCount(overCapacity)).withStyle(ChatFormatting.RED));
             }
-            guiGraphics.renderTooltip(font, lines, Optional.empty(), mouseX, mouseY);
+            guiGraphics.setTooltipForNextFrame(font, lines, Optional.empty(), mouseX, mouseY);
         } else if (x >= right - font.width(getCapacityInfo()) && x < right) {
             List<Component> lines = Lists.newArrayList(Component.translatable("gui.colossalchests2.stacks_per_slot.info"));
             Component full = getFullCapacityInfo();
@@ -437,7 +430,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
                 lines.add(full);
             }
             lines.addAll(List.of(getCapacityLine("stack_64", 64), getCapacityLine("stack_16", 16), getCapacityLine("stack_1", 1)));
-            guiGraphics.renderTooltip(font, lines, Optional.empty(), mouseX, mouseY);
+            guiGraphics.setTooltipForNextFrame(font, lines, Optional.empty(), mouseX, mouseY);
         }
     }
 
@@ -446,10 +439,10 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
     }
 
     @Override
-    protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top, int button) {
+    protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top) {
         boolean inUpgradePanel = mouseX >= left + UPGRADE_PANEL_X && mouseX < left && mouseY >= top + UPGRADE_PANEL_Y
                 && mouseY < top + UPGRADE_PANEL_Y + getUpgradePanelHeight();
-        return super.hasClickedOutside(mouseX, mouseY, left, top, button) && !inUpgradePanel;
+        return super.hasClickedOutside(mouseX, mouseY, left, top) && !inUpgradePanel;
     }
 
     @Override
@@ -487,7 +480,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
         }
     }
 
-    private void renderUpgradeSlotTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderUpgradeSlotTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         if (!(hoveredSlot instanceof ContainerChest.UpgradeSlot slot) || slot.hasItem()) {
             return;
         }
@@ -497,7 +490,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
             if (problem != null) {
                 List<Component> lines = Lists.newArrayList();
                 addUpgradeInsertProblem(lines, carried, problem);
-                guiGraphics.renderTooltip(font, lines, Optional.empty(), mouseX, mouseY);
+                guiGraphics.setTooltipForNextFrame(font, lines, Optional.empty(), mouseX, mouseY);
             }
             return;
         }
@@ -512,7 +505,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
                     ? Component.translatable("gui.colossalchests2.upgrade.slot.none", name).withStyle(ChatFormatting.DARK_GRAY)
                     : Component.translatable("gui.colossalchests2.upgrade.slot.count", name, installed.count(upgrade), max).withStyle(ChatFormatting.GRAY));
         }
-        guiGraphics.renderTooltip(font, lines, Optional.empty(), mouseX, mouseY);
+        guiGraphics.setTooltipForNextFrame(font, lines, Optional.empty(), mouseX, mouseY);
     }
 
     /**
@@ -527,7 +520,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
     /**
      * A border along the inside of a slot that matches the search, behind its item.
      */
-    private static void drawSearchHit(GuiGraphics guiGraphics, int x, int y) {
+    private static void drawSearchHit(GuiGraphicsExtractor guiGraphics, int x, int y) {
         guiGraphics.fill(x, y, x + 16, y + 1, COLOR_SEARCH_HIT);
         guiGraphics.fill(x, y + 15, x + 16, y + 16, COLOR_SEARCH_HIT);
         guiGraphics.fill(x, y + 1, x + 1, y + 15, COLOR_SEARCH_HIT);
@@ -537,7 +530,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
     /**
      * The sunken search field of the creative inventory.
      */
-    private static void drawSearchField(GuiGraphics guiGraphics, int x, int y, int width) {
+    private static void drawSearchField(GuiGraphicsExtractor guiGraphics, int x, int y, int width) {
         guiGraphics.fill(x, y, x + width, y + SEARCH_HEIGHT, COLOR_SHADOW);
         guiGraphics.fill(x + 1, y + 1, x + width, y + SEARCH_HEIGHT, COLOR_LIGHT);
         guiGraphics.fill(x + 1, y + 1, x + width - 1, y + SEARCH_HEIGHT - 1, COLOR_SLOT);
@@ -546,13 +539,13 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
     }
 
     @Override
-    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         drawInfo(guiGraphics);
-        guiGraphics.drawString(font, settingsOpen ? Component.translatable("gui.colossalchests2.settings_title", title) : title,
+        guiGraphics.text(font, settingsOpen ? Component.translatable("gui.colossalchests2.settings_title", title) : title,
                 8, 6, COLOR_TEXT, false);
     }
 
-    private void renderChestTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderChestTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         int slot = getHoveredSlot(mouseX, mouseY);
         if (slot < 0 || !menu.getCarried().isEmpty()) {
             return;
@@ -577,7 +570,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
         if (family.isPresent()) {
             renderCompressedTooltip(guiGraphics, mouseX, mouseY, deepSlot, family.get(), lines);
         } else {
-            guiGraphics.renderTooltip(font, lines, Optional.empty(), mouseX, mouseY);
+            guiGraphics.setTooltipForNextFrame(font, lines, Optional.empty(), mouseX, mouseY);
         }
     }
 
@@ -600,7 +593,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
      * A tooltip like the bundle's: the text lines, then a row with each form and how many of it the slot makes, with
      * the form that clicks take framed.
      */
-    private void renderCompressedTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY, DeepSlot deepSlot, CompressionFamily family,
+    private void renderCompressedTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, DeepSlot deepSlot, CompressionFamily family,
                                          List<Component> lines) {
         Component hint = Component.translatable("gui.colossalchests2.compression.scroll").withStyle(ChatFormatting.GRAY);
         long baseUnits = family.toBaseUnits(0, deepSlot.getCount()) + deepSlot.getRemainder();
@@ -622,11 +615,10 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
         Vector2ic position = DefaultTooltipPositioner.INSTANCE.positionTooltip(this.width, this.height, mouseX, mouseY, width, height);
         int x = position.x();
         int y = position.y();
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate(0, 0, 400);
-        TooltipRenderUtil.renderTooltipBackground(guiGraphics, x, y, width, height, 0);
+        guiGraphics.nextStratum();
+        TooltipRenderUtil.extractTooltipBackground(guiGraphics, x, y, width, height, null);
         for (int i = 0; i < lines.size(); i++) {
-            guiGraphics.drawString(font, lines.get(i), x, y + i * 10 + (i > 0 ? 2 : 0), 0xFFFFFF, true);
+            guiGraphics.text(font, lines.get(i), x, y + i * 10 + (i > 0 ? 2 : 0), 0xFFFFFFFF, true);
         }
         int cellX = x;
         for (int form = 0; form < family.size(); form++) {
@@ -635,16 +627,12 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
                 guiGraphics.fill(iconX - 2, y + rowY - 2, iconX + 18, y + rowY + 18, COLOR_FORM_CHOSEN);
                 guiGraphics.fill(iconX - 1, y + rowY - 1, iconX + 17, y + rowY + 17, COLOR_FORM_CHOSEN_INSIDE);
             }
-            guiGraphics.renderItem(new ItemStack(family.get(form).item()), iconX, y + rowY);
-            guiGraphics.pose().pushPose();
-            guiGraphics.pose().translate(0, 0, 200);
-            guiGraphics.drawString(font, amounts[form], cellX + (cellWidths[form] - font.width(amounts[form])) / 2, y + rowY + 19,
-                    form == chosen ? 0xFFFFFF : 0xAAAAAA, true);
-            guiGraphics.pose().popPose();
+            guiGraphics.item(new ItemStack(family.get(form).item()), iconX, y + rowY);
+            guiGraphics.text(font, amounts[form], cellX + (cellWidths[form] - font.width(amounts[form])) / 2, y + rowY + 19,
+                    form == chosen ? 0xFFFFFFFF : 0xFFAAAAAA, true);
             cellX += cellWidths[form];
         }
-        guiGraphics.drawString(font, hint, x, y + rowY + FORM_ROW_HEIGHT, 0xFFFFFF, true);
-        guiGraphics.pose().popPose();
+        guiGraphics.text(font, hint, x, y + rowY + FORM_ROW_HEIGHT, 0xFFFFFFFF, true);
     }
 
     @Override
@@ -657,7 +645,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
                 // Scrolling down picks the next smaller form, like the bundle.
                 int size = family.get().size();
                 int form = Math.floorMod(getChosenForm(deepSlot, family.get()) + (scrollY < 0 ? 1 : -1), size);
-                ColossalChestsInstance.MOD.getPacketHandlerCommon().sendToServer(new ServerboundChestFormPacket(menu.containerId, slot,
+                ColossalChestsInstance.MOD.getPacketHandler().sendToServer(new ServerboundChestFormPacket(menu.containerId, slot,
                         new ItemStack(family.get().get(form).item())));
                 return true;
             }
@@ -681,7 +669,10 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && searchField.visible && isOverSearchField(mouseX, mouseY)) {
             // Select all, so typing replaces the query.
             setFocused(searchField);
@@ -692,19 +683,19 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
         }
         int slot = getHoveredSlot(mouseX, mouseY);
         if (slot < 0) {
-            return super.mouseClicked(mouseX, mouseY, button);
+            return super.mouseClicked(event, doubleClick);
         }
         boolean left = button == GLFW.GLFW_MOUSE_BUTTON_LEFT;
         boolean right = button == GLFW.GLFW_MOUSE_BUTTON_RIGHT;
-        if (left && hasAltDown() && hasLockUpgrade()) {
+        if (left && event.hasAltDown() && hasLockUpgrade()) {
             sendClick(slot, ChestClickAction.TOGGLE_LOCK);
             return true;
         }
-        if (right && hasAltDown() && hasVoidUpgrade()) {
+        if (right && event.hasAltDown() && hasVoidUpgrade()) {
             sendClick(slot, ChestClickAction.TOGGLE_VOID);
             return true;
         }
-        if ((left || right) && !menu.getCarried().isEmpty() && !hasShiftDown() && !hasControlDown()) {
+        if ((left || right) && !menu.getCarried().isEmpty() && !event.hasShiftDown() && !event.hasControlDown()) {
             // With a stack on the cursor, the release decides between a click and a drag.
             dragButton = button;
             dragStartSlot = slot;
@@ -716,9 +707,9 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
             ChestClickAction action;
             if (right) {
                 action = ChestClickAction.TAKE_HALF;
-            } else if (hasShiftDown()) {
+            } else if (event.hasShiftDown()) {
                 action = ChestClickAction.MOVE_STACK;
-            } else if (hasControlDown()) {
+            } else if (event.hasControlDown()) {
                 action = ChestClickAction.MOVE_ALL;
             } else {
                 action = ChestClickAction.TAKE_STACK;
@@ -730,9 +721,9 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (dragButton >= 0 && button == dragButton) {
-            int slot = getHoveredSlot(mouseX, mouseY);
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        if (dragButton >= 0 && event.button() == dragButton) {
+            int slot = getHoveredSlot(event.x(), event.y());
             // Like vanilla, never drag over more slots than there are items.
             if (slot >= 0 && draggedSlots.size() < menu.getCarried().getCount()
                     && menu.canChestSlotAccept(slot, menu.getCarried())) {
@@ -740,7 +731,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
             }
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return super.mouseDragged(event, dragX, dragY);
     }
 
     /**
@@ -767,8 +758,8 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (dragButton >= 0 && button == dragButton) {
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (dragButton >= 0 && event.button() == dragButton) {
             boolean oneEach = dragButton == GLFW.GLFW_MOUSE_BUTTON_RIGHT;
             if (draggedSlots.size() < 2) {
                 int slot = draggedSlots.isEmpty() ? dragStartSlot : draggedSlots.iterator().next();
@@ -779,27 +770,27 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
                     sendClick(slot, oneEach ? ChestClickAction.TAKE_HALF : ChestClickAction.TAKE_STACK);
                 }
             } else {
-                ColossalChestsInstance.MOD.getPacketHandlerCommon().sendToServer(new ServerboundChestDragPacket(menu.containerId,
+                ColossalChestsInstance.MOD.getPacketHandler().sendToServer(new ServerboundChestDragPacket(menu.containerId,
                         draggedSlots.stream().mapToInt(Integer::intValue).toArray(), oneEach));
             }
             dragButton = -1;
             draggedSlots.clear();
             return true;
         }
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
 
     private void sendClick(int slot, ChestClickAction action) {
-        ColossalChestsInstance.MOD.getPacketHandlerCommon().sendToServer(new ServerboundChestClickPacket(menu.containerId, slot, action));
+        ColossalChestsInstance.MOD.getPacketHandler().sendToServer(new ServerboundChestClickPacket(menu.containerId, slot, action));
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
         // Typing in the search field must not close the screen.
-        if (searchField.isFocused() && keyCode != GLFW.GLFW_KEY_ESCAPE) {
-            return searchField.keyPressed(keyCode, scanCode, modifiers) || searchField.canConsumeInput();
+        if (searchField.isFocused() && !event.isEscape()) {
+            return searchField.keyPressed(event) || searchField.canConsumeInput();
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     /**
@@ -819,13 +810,10 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
         }
 
         @Override
-        protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-            Component message = getMessage();
-            // Draw the vanilla button without its label, then the icon on it.
-            setMessage(Component.empty());
-            super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
-            setMessage(message);
-            guiGraphics.blit(Images.ICONS, getX() + 1, getY() + 1, ICON_U, ICON_V, ICON_WIDTH, ICON_HEIGHT);
+        protected void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+            // The vanilla button without its label, then the icon on it.
+            extractDefaultSprite(guiGraphics);
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, Images.ICONS, getX() + 1, getY() + 1, ICON_U, ICON_V, ICON_WIDTH, ICON_HEIGHT, 256, 256);
         }
     }
 

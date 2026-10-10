@@ -5,7 +5,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import org.cyclops.colossalchests2.ColossalChests;
 import org.cyclops.colossalchests2.block.DisplayWallInteractions;
-import org.cyclops.cyclopscore.init.ModBase;
+import org.cyclops.cyclopscore.init.ModBaseNeoForge;
 import org.cyclops.cyclopscore.proxy.ClientProxyComponent;
 
 /**
@@ -28,7 +28,7 @@ public class ClientProxy extends ClientProxyComponent {
     }
 
     @Override
-    public ModBase getMod() {
+    public ModBaseNeoForge<ColossalChests> getMod() {
         return ColossalChests._instance;
     }
 

@@ -1,5 +1,7 @@
 package org.cyclops.colossalchests2.material;
 
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.storage.TagValueInput;
 import com.google.common.collect.Lists;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -78,7 +80,7 @@ public final class MaterialChanges {
         if (!player.hasInfiniteMaterials()) {
             int available = count(player.getInventory(), newWall);
             if (available < blocks) {
-                return Result.fail(message("missing", blocks, newWall.getDescription(), blocks - available));
+                return Result.fail(message("missing", blocks, new ItemStack(newWall).getHoverName(), blocks - available));
             }
             consume(player.getInventory(), newWall, blocks);
             give(player, current.getWallBlock().asItem(), blocks);
@@ -159,7 +161,7 @@ public final class MaterialChanges {
         }
         level.setBlock(corePos, withFormed(target.getCoreBlock(), level.getBlockState(corePos)), Block.UPDATE_ALL);
         if (level.getBlockEntity(corePos) instanceof BlockEntityChestCore newCore) {
-            newCore.loadCustomOnly(data, level.registryAccess());
+            newCore.loadCustomOnly(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), data));
             newCore.setChanged();
             newCore.validateNow();
             for (ServerPlayer viewer : viewers) {
