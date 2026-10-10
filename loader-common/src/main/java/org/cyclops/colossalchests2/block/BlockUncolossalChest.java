@@ -2,7 +2,6 @@ package org.cyclops.colossalchests2.block;
 
 import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.LevelReader;
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -45,7 +44,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class BlockUncolossalChest extends BaseEntityBlock implements SimpleWaterloggedBlock {
 
-    public static final MapCodec<BlockUncolossalChest> CODEC = simpleCodec(BlockUncolossalChest::new);
     public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
     private static final VoxelShape SHAPE = Block.box(5.0D, 0.0D, 5.0D, 11.0D, 6.0D, 11.0D);
@@ -53,11 +51,6 @@ public class BlockUncolossalChest extends BaseEntityBlock implements SimpleWater
     public BlockUncolossalChest(Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(WATERLOGGED, false));
-    }
-
-    @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
     }
 
     @Override

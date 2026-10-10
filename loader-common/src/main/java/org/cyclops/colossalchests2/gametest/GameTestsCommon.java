@@ -1,5 +1,6 @@
 package org.cyclops.colossalchests2.gametest;
 
+import net.minecraft.util.Prediction;
 import org.cyclops.colossalchests2.storage.CompressionDiscovery;
 import net.minecraft.server.permissions.LevelBasedPermissionSet;
 import net.minecraft.server.permissions.PermissionSet;
@@ -2398,7 +2399,7 @@ public class GameTestsCommon {
                     giveWalls(player, ChestMaterial.DIAMOND, 25);
                     ItemStack named = new ItemStack(diamondWall, 64);
                     named.set(DataComponents.CUSTOM_NAME, Component.literal("Keep"));
-                    player.getInventory().placeItemBackInInventory(named);
+                    player.getInventory().placeItemBackInInventory(named, Prediction.SERVER_ONLY);
                     helper.assertFalse(useMaterialUpgrade(helper, player, corePos, ChestMaterial.DIAMOND).consumesAction(),
                             "Expected the upgrade to fail without enough walls");
                     helper.assertValueEqual(countInInventory(player, diamondWall), 25 + 64, "diamond walls after failing");
@@ -2496,7 +2497,7 @@ public class GameTestsCommon {
     private static void giveWalls(ServerPlayer player, ChestMaterial material, int count) {
         Item item = wall(material).asItem();
         for (int remaining = count; remaining > 0; remaining -= item.getDefaultMaxStackSize()) {
-            player.getInventory().placeItemBackInInventory(new ItemStack(item, Math.min(remaining, item.getDefaultMaxStackSize())));
+            player.getInventory().placeItemBackInInventory(new ItemStack(item, Math.min(remaining, item.getDefaultMaxStackSize())), Prediction.SERVER_ONLY);
         }
     }
 
@@ -2886,7 +2887,7 @@ public class GameTestsCommon {
         };
         MinecraftServer server = helper.getLevel().getServer();
         CommandSourceStack source = new CommandSourceStack(output, position, new Vec2(0, yRot), helper.getLevel(), permission,
-                "test", Component.literal("test"), server, null);
+                Component.literal("test"), server);
         server.getCommands().performPrefixedCommand(source, command);
         return messages;
     }

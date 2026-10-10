@@ -10,9 +10,6 @@ import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.item.component.ItemContainerContents;
 import org.cyclops.colossalchests2.Reference;
 
-import java.util.Map;
-import java.util.Optional;
-
 /**
  * Keeps chest cores that carry items out of chests, so cores can not be nested in each other without limit and
  * overflow the size of saved data. Also looks inside vanilla containers, such as shulker boxes and bundles.
@@ -47,8 +44,8 @@ public final class NestedChests {
             return true;
         }
         // Compared by id, so this works without the mod's registries, such as in unit tests.
-        for (Map.Entry<DataComponentType<?>, Optional<?>> entry : patch.entrySet()) {
-            if (entry.getValue().isPresent() && CONTENTS_COMPONENT.equals(BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(entry.getKey()))) {
+        for (DataComponentType<?> type : patch.split().added().keySet()) {
+            if (CONTENTS_COMPONENT.equals(BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(type))) {
                 return true;
             }
         }
@@ -62,7 +59,7 @@ public final class NestedChests {
         }
         BundleContents bundle = stack.get(DataComponents.BUNDLE_CONTENTS);
         if (bundle != null) {
-            for (ItemStack inner : bundle.itemCopyStream().toList()) {
+            for (ItemStack inner : bundle.itemCopies().toList()) {
                 if (holdsChestContents(inner, depth + 1)) {
                     return true;
                 }

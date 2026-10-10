@@ -2,10 +2,10 @@ package org.cyclops.colossalchests2.advancement;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.advancements.criterion.ContextAwarePredicate;
-import net.minecraft.advancements.criterion.EntityPredicate;
-import net.minecraft.advancements.criterion.SimpleCriterionTrigger;
+import net.minecraft.advancements.triggers.SimpleCriterionTrigger;
+import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import org.cyclops.colossalchests2.api.ChestMaterial;
 
 import java.util.Optional;
@@ -17,7 +17,7 @@ import java.util.Optional;
 public class ChestFormedTrigger extends SimpleCriterionTrigger<ChestFormedTrigger.Instance> {
 
     public static final Codec<Instance> CODEC = RecordCodecBuilder.create(i -> i.group(
-            EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(Instance::player),
+            LootItemCondition.CODEC.optionalFieldOf("player").forGetter(Instance::player),
             ChestMaterial.CODEC.optionalFieldOf("material").forGetter(Instance::material),
             Codec.INT.optionalFieldOf("minimum_size").forGetter(Instance::minimumSize)
     ).apply(i, Instance::new));
@@ -36,7 +36,7 @@ public class ChestFormedTrigger extends SimpleCriterionTrigger<ChestFormedTrigge
      * @param material The chest material, any if empty.
      * @param minimumSize The smallest chest size, any if empty.
      */
-    public record Instance(Optional<ContextAwarePredicate> player, Optional<ChestMaterial> material,
+    public record Instance(Optional<Holder<LootItemCondition>> player, Optional<ChestMaterial> material,
                            Optional<Integer> minimumSize) implements SimpleCriterionTrigger.SimpleInstance {
         public boolean matches(ChestMaterial material, int size) {
             return this.material.map(m -> m.equals(material)).orElse(true) && this.minimumSize.map(s -> s <= size).orElse(true);
