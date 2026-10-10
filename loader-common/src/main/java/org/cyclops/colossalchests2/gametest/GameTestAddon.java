@@ -16,6 +16,7 @@ import org.cyclops.colossalchests2.api.block.ChestMemberBlock;
 import org.cyclops.colossalchests2.api.upgrade.ChestUpgrade;
 import org.cyclops.cyclopscore.config.extendedconfig.BlockConfigCommon;
 import org.cyclops.cyclopscore.config.extendedconfig.ItemConfigCommon;
+import org.cyclops.cyclopscore.gametest.GameTestLoaderHelpers;
 import org.cyclops.cyclopscore.init.IModBase;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -61,11 +62,11 @@ public final class GameTestAddon {
     }
 
     /**
-     * @return If this is a game test server of any loader.
+     * @return If this is a game test server of any loader, or game tests are enabled for all Cyclops mods, as in production pack tests.
      */
     public static boolean isEnabled() {
         return Boolean.getBoolean("neoforge.gameTestServer") || Boolean.getBoolean("forge.gameTestServer")
-                || System.getProperty("fabric-api.gametest") != null;
+                || System.getProperty("fabric-api.gametest") != null || GameTestLoaderHelpers.areGameTestsGloballyEnabled();
     }
 
     /**
