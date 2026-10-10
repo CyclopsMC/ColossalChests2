@@ -3,7 +3,10 @@
   "required": true,
   "compatibilityLevel": "JAVA_17",
   "package": "org.cyclops.colossalchests2.mixin",
-  "mixins": [],
+  "mixins": [
+    "MixinTransportItemsBetweenContainers",
+    "MixinTransportItemTarget"
+  ],
   "client": [],
   "setSourceFile": true
 }

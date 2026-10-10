@@ -15,6 +15,8 @@
   "block.colossalchests2.chest_wall_display": "Chest Display",
   "block.colossalchests2.chest_wall_magnet": "Magnet Chest Wall",
   "block.colossalchests2.chest_wall_magnet.info": "Pulls dropped items around it into the chest. Sneak-right-click with empty hand to set its radius.",
+  "block.colossalchests2.chest_wall_golem": "Golem Chest Wall",
+  "block.colossalchests2.chest_wall_golem.info": "Copper golems take items out of the chest through this wall, like from a copper chest. They sort items into the core of colossal chests without one.",
   "block.colossalchests2.chest_wall_redstone": "Redstone Chest Wall",
   "block.colossalchests2.chest_wall_redstone.info": "Emits a redstone signal based on how full the chest is.",
   "block.colossalchests2.chest_wall_display.info": "Shows an item and its count. Take items with (sneak-)left-click and insert with (double) right-click.",

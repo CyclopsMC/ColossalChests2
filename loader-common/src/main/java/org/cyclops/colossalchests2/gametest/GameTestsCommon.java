@@ -50,6 +50,12 @@ import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+import net.minecraft.world.entity.animal.golem.CopperGolem;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import org.cyclops.colossalchests2.golem.GolemTransport;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.MenuType;
@@ -2289,6 +2295,8 @@ public class GameTestsCommon {
         // Functional walls accept any plain wall.
         assertCrafts(helper, CraftingInput.of(2, 1, List.of(modItem("chest_wall_gold"), new ItemStack(Items.HOPPER))),
                 modItem("chest_wall_interface"));
+        assertCrafts(helper, CraftingInput.of(2, 1, List.of(modItem("chest_wall_iron"), new ItemStack(Items.EXPOSED_COPPER_CHEST))),
+                modItem("chest_wall_golem"));
         assertCrafts(helper, CraftingInput.of(2, 2, List.of(ironWall, new ItemStack(Items.ENDER_PEARL), i, new ItemStack(Items.REDSTONE))),
                 modItem("chest_wall_magnet"));
         assertCrafts(helper, CraftingInput.of(2, 1, List.of(modItem("chest_wall_display"), new ItemStack(Items.HOPPER))), null);
@@ -2702,6 +2710,134 @@ public class GameTestsCommon {
                 .get(Identifier.fromNamespaceAndPath(Reference.MOD_ID, path));
         helper.assertTrue(advancement != null, "Expected advancement " + path + " to exist");
         helper.assertValueEqual(player.getAdvancements().getOrStartProgress(advancement).isDone(), done, "advancement " + path + " done");
+    }
+
+    // Copper golems
+
+    /**
+     * Lay a floor for golems to walk on, and spawn one without its spawn cooldown.
+     */
+    private static CopperGolem spawnGolem(GameTestHelper helper, BlockPos pos) {
+        for (int x = 0; x < 10; x++) {
+            for (int z = 0; z < 10; z++) {
+                helper.setBlock(new BlockPos(x, 0, z), Blocks.STONE);
+            }
+        }
+        CopperGolem golem = helper.spawn(EntityType.COPPER_GOLEM, pos);
+        golem.getBrain().eraseMemory(MemoryModuleType.TRANSPORT_ITEMS_COOLDOWN_TICKS);
+        return golem;
+    }
+
+    private static int countInChest(GameTestHelper helper, BlockPos pos, Item item) {
+        return helper.getBlockEntity(pos, ChestBlockEntity.class).countItem(item);
+    }
+
+    @GameTest(template = TEMPLATE_EMPTY, timeoutTicks = 800)
+    public void testGolemTakesFromGolemWall(GameTestHelper helper) {
+        BlockPos corePos = buildChest(helper, MIN_A, 3, ChestMaterial.WOOD);
+        placeWall(helper, MIN_A.offset(2, 0, 1), WallType.GOLEM);
+        BlockPos chestPos = new BlockPos(7, 1, 2);
+        helper.setBlock(chestPos, Blocks.CHEST);
+        helper.startSequence()
+                .thenWaitUntil(() -> assertFormed(helper, corePos, MIN_A, 3))
+                .thenExecute(() -> {
+                    getCore(helper, corePos).getStorage().insert(stone(), 100, false);
+                    spawnGolem(helper, new BlockPos(6, 1, 4));
+                })
+                .thenWaitUntil(() -> helper.assertTrue(countInChest(helper, chestPos, Items.STONE) >= GolemTransport.PICKUP_AMOUNT,
+                        "Expected the golem to bring stone to the chest"))
+                .thenExecute(() -> helper.assertTrue(DisplayStats.of(getCore(helper, corePos).getStorage(), stone()).count() <= 100 - GolemTransport.PICKUP_AMOUNT,
+                        "Expected the stone to come out of the colossal chest"))
+                .thenSucceed();
+    }
+
+    @GameTest(template = TEMPLATE_EMPTY, timeoutTicks = 800)
+    public void testGolemSortsIntoColossalChest(GameTestHelper helper) {
+        // The core of a size 4 chest is above golems, so they must reach up.
+        BlockPos corePos = buildChest(helper, MIN_A, 4, ChestMaterial.COPPER);
+        BlockPos chestPos = new BlockPos(7, 1, 2);
+        helper.setBlock(chestPos, Blocks.COPPER_CHEST);
+        helper.startSequence()
+                .thenWaitUntil(() -> assertFormed(helper, corePos, MIN_A, 4))
+                .thenExecute(() -> {
+                    helper.getBlockEntity(chestPos, ChestBlockEntity.class).setItem(0, stone().copyWithCount(10));
+                    spawnGolem(helper, new BlockPos(5, 1, 0));
+                })
+                .thenWaitUntil(() -> helper.assertValueEqual(DisplayStats.of(getCore(helper, corePos).getStorage(), stone()).count(), 10L,
+                        "stone sorted into the colossal chest"))
+                .thenExecute(() -> helper.assertValueEqual(countInChest(helper, chestPos, Items.STONE), 0, "stone left in the copper chest"))
+                .thenSucceed();
+    }
+
+    @GameTest(template = TEMPLATE_EMPTY, timeoutTicks = 800)
+    public void testGolemDoesNotPutBackIntoSource(GameTestHelper helper) {
+        BlockPos corePos = buildChest(helper, MIN_A, 3, ChestMaterial.WOOD);
+        placeWall(helper, MIN_A.offset(2, 0, 1), WallType.GOLEM);
+        List<CopperGolem> golems = Lists.newArrayList();
+        helper.startSequence()
+                .thenWaitUntil(() -> assertFormed(helper, corePos, MIN_A, 3))
+                .thenExecute(() -> {
+                    getCore(helper, corePos).getStorage().insert(stone(), 100, false);
+                    golems.add(spawnGolem(helper, new BlockPos(6, 1, 4)));
+                })
+                .thenWaitUntil(() -> helper.assertTrue(golems.getFirst().getMainHandItem().is(Items.STONE), "Expected the golem to take stone"))
+                // Long enough for a golem to find a target, walk to it and put the stone down.
+                .thenIdle(300)
+                .thenExecute(() -> {
+                    helper.assertValueEqual(golems.getFirst().getMainHandItem().getCount(), GolemTransport.PICKUP_AMOUNT, "stone held");
+                    helper.assertValueEqual(DisplayStats.of(getCore(helper, corePos).getStorage(), stone()).count(),
+                            100L - GolemTransport.PICKUP_AMOUNT, "stone in the colossal chest");
+                })
+                .thenSucceed();
+    }
+
+    @GameTest(template = TEMPLATE_EMPTY)
+    public void testGolemTargets(GameTestHelper helper) {
+        BlockPos corePosA = buildChest(helper, MIN_A, 3, ChestMaterial.WOOD);
+        BlockPos corePosB = buildChest(helper, MIN_B, 3, ChestMaterial.IRON);
+        BlockPos wallPos = placeWall(helper, MIN_A.offset(2, 0, 1), WallType.GOLEM);
+        helper.startSequence()
+                .thenWaitUntil(() -> {
+                    assertFormed(helper, corePosA, MIN_A, 3);
+                    assertFormed(helper, corePosB, MIN_B, 3);
+                })
+                .thenExecute(() -> {
+                    BlockEntityChestCore coreA = getCore(helper, corePosA);
+                    BlockEntityChestCore coreB = getCore(helper, corePosB);
+                    BlockEntity wall = helper.getBlockEntity(wallPos, BlockEntity.class);
+                    helper.assertTrue(GolemTransport.isTarget(wall, true), "Expected golems to take from a Golem wall");
+                    helper.assertFalse(GolemTransport.isTarget(wall, false), "Expected golems not to put into a Golem wall");
+                    helper.assertFalse(GolemTransport.isTarget(coreA, false), "Expected golems not to put into a chest with a Golem wall");
+                    helper.assertTrue(GolemTransport.isTarget(coreB, false), "Expected golems to put into a chest without a Golem wall");
+                    helper.assertFalse(GolemTransport.isTarget(coreB, true), "Expected golems not to take from a chest without a Golem wall");
+
+                    // Like vanilla chests, only an empty chest or one holding the item receives it.
+                    CopperGolem golem = helper.spawn(EntityType.COPPER_GOLEM, new BlockPos(5, 1, 1));
+                    golem.setItemSlot(EquipmentSlot.MAINHAND, stone().copyWithCount(5));
+                    GolemTransport.ChestContainer destination = (GolemTransport.ChestContainer) GolemTransport.getContainer(coreB);
+                    helper.assertTrue(GolemTransport.canPutDown(golem, destination), "Expected an empty chest to receive stone");
+                    coreB.getStorage().insert(new ItemStack(Items.DIRT), 1, false);
+                    helper.assertFalse(GolemTransport.canPutDown(golem, destination), "Expected a chest with only dirt not to receive stone");
+                    coreB.getStorage().insert(stone(), 1, false);
+                    helper.assertTrue(GolemTransport.canPutDown(golem, destination), "Expected a chest with stone to receive stone");
+                    helper.assertValueEqual(GolemTransport.putDown(golem, destination).getCount(), 0, "stone left");
+                    helper.assertValueEqual(DisplayStats.of(coreB.getStorage(), stone()).count(), 6L, "stone in the chest");
+
+                    // Golems take at most a stack of 16 of the first item.
+                    GolemTransport.ChestContainer source = (GolemTransport.ChestContainer) GolemTransport.getContainer(wall);
+                    helper.assertFalse(GolemTransport.canPickUp(source), "Expected nothing to take from an empty chest");
+                    coreA.getStorage().insert(stone(), 20, false);
+                    helper.assertTrue(GolemTransport.canPickUp(source), "Expected stone to take");
+                    helper.assertValueEqual(GolemTransport.pickUp(source).getCount(), GolemTransport.PICKUP_AMOUNT, "stone taken");
+                    helper.assertValueEqual(DisplayStats.of(coreA.getStorage(), stone()).count(), 20L - GolemTransport.PICKUP_AMOUNT, "stone left");
+
+                    // Opening opens the lid.
+                    source.startOpen(golem);
+                    helper.assertValueEqual(coreA.getOpeners(), List.of(golem), "openers");
+                    source.stopOpen(golem);
+                    helper.assertValueEqual(coreA.getOpeners(), List.of(), "openers after closing");
+                })
+                .thenSucceed();
     }
 
     // Sounds
