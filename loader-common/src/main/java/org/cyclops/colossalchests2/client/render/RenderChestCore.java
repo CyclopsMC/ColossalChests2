@@ -180,6 +180,9 @@ public class RenderChestCore implements BlockEntityRenderer<BlockEntityChestCore
             return Sheets.chooseSprite(christmas ? ChestRenderState.ChestMaterialType.CHRISTMAS : ChestRenderState.ChestMaterialType.REGULAR,
                     ChestType.SINGLE);
         }
+        if (ChestMaterial.COPPER.equals(material)) {
+            return Sheets.chooseSprite(ChestRenderState.ChestMaterialType.COPPER_UNAFFECTED, ChestType.SINGLE);
+        }
         return new SpriteId(Sheets.CHEST_SHEET, material.id().withPrefix("entity/chest/"));
     }
 

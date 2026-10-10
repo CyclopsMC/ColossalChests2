@@ -21,7 +21,7 @@ public class TestChestTextures extends BootstrapTest {
         // The closed lid overlaps the base by one pixel with coplanar sides, so differing texels there z-fight.
         // Textures are upside down: that pixel is the first row of the lid's sides and the last row of the base's.
         for (ChestMaterial material : ChestMaterial.BUILT_IN) {
-            if (material == ChestMaterial.WOOD) {
+            if (material == ChestMaterial.WOOD || material == ChestMaterial.COPPER) {
                 continue; // Uses the vanilla texture.
             }
             String path = "/assets/colossalchests2/textures/entity/chest/" + material.id().getPath() + ".png";
