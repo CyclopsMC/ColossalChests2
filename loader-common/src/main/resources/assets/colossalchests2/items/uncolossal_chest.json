@@ -1,7 +1,7 @@
 {
   "model": {
     "type": "minecraft:special",
-    "base": "minecraft:item/chest",
+    "base": "colossalchests2:item/uncolossal_chest",
     "model": {
       "type": "minecraft:chest",
       "texture": "minecraft:normal"

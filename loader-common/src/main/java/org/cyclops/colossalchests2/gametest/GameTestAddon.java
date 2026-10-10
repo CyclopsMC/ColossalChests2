@@ -8,7 +8,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
-import org.cyclops.colossalchests2.Reference;
 import org.cyclops.colossalchests2.api.ChestMaterial;
 import org.cyclops.colossalchests2.api.ColossalChestsApi;
 import org.cyclops.colossalchests2.api.IChest;
@@ -62,11 +61,11 @@ public final class GameTestAddon {
     }
 
     /**
-     * @return If game tests are enabled for this mod on any loader, or for all Cyclops mods, as in production pack tests.
+     * @return If this is a game test server of any loader, or game tests are enabled for all Cyclops mods, as in production pack tests.
      */
     public static boolean isEnabled() {
         return Boolean.getBoolean("neoforge.gameTestServer") || Boolean.getBoolean("forge.gameTestServer")
-                || System.getProperty("fabric-api.gametest") != null || GameTestLoaderHelpers.areGameTestsEnabled(Reference.MOD_ID);
+                || System.getProperty("fabric-api.gametest") != null || GameTestLoaderHelpers.areGameTestsGloballyEnabled();
     }
 
     /**

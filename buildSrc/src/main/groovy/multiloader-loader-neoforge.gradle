@@ -57,6 +57,7 @@ neoForge {
         }
         gameTestServer {
             type = "gameTestServer"
+            systemProperty 'neoforge.gameTestServer', 'true'
         }
         configureEach {
             systemProperty 'forge.logging.markers', 'REGISTRIES'

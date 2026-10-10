@@ -73,6 +73,7 @@ minecraft {
 
         register('gameTestServer') {
             systemProperty 'forge.enabledGameTestNamespaces', "cyclopscore,${mod_id}"
+            systemProperty 'forge.gameTestServer', 'true'
             systemProperty 'net.minecraftforge.launcher.skip.assets', 'true'
         }
 
