@@ -1,6 +1,5 @@
 package org.cyclops.colossalchests2.modcompat;
 
-import org.cyclops.colossalchests2.ColossalChests;
 import org.cyclops.colossalchests2.Reference;
 import org.cyclops.cyclopscore.modcompat.ICompatInitializer;
 import org.cyclops.cyclopscore.modcompat.IModCompat;
@@ -29,6 +28,6 @@ public class CommonCapabilitiesModCompat implements IModCompat {
 
     @Override
     public ICompatInitializer createInitializer() {
-        return () -> ColossalChests._instance.getModEventBus().addListener(InventoryStateCapabilities::register);
+        return new CommonCapabilitiesModCompatInitializer();
     }
 }

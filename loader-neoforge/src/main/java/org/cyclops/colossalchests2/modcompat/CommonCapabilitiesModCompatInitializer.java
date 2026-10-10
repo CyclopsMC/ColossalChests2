@@ -1,21 +1,25 @@
 package org.cyclops.colossalchests2.modcompat;
 
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import org.cyclops.colossalchests2.ColossalChests;
 import org.cyclops.colossalchests2.RegistryEntries;
 import org.cyclops.commoncapabilities.api.capability.Capabilities;
 import org.cyclops.commoncapabilities.api.capability.inventorystate.IInventoryState;
+import org.cyclops.cyclopscore.modcompat.ICompatInitializer;
 
 /**
  * Registers the inventory state capability of chests.
  * Kept apart from {@link CommonCapabilitiesModCompat}, as loading this class requires Common Capabilities.
  * @author rubensworks
  */
-public final class InventoryStateCapabilities {
+public class CommonCapabilitiesModCompatInitializer implements ICompatInitializer {
 
-    private InventoryStateCapabilities() {
+    @Override
+    public void initialize() {
+        ColossalChests._instance.getModEventBus().addListener(this::registerCapabilities);
     }
 
-    public static void register(RegisterCapabilitiesEvent event) {
+    protected void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(Capabilities.InventoryState.BLOCK, RegistryEntries.BLOCK_ENTITY_CHEST_CORE.value(),
                 (core, side) -> core.isFormed() ? new InventoryStateChestStorage(core.getStorage()) : null);
         event.registerBlockEntity(Capabilities.InventoryState.BLOCK, RegistryEntries.BLOCK_ENTITY_CHEST_WALL.value(),
