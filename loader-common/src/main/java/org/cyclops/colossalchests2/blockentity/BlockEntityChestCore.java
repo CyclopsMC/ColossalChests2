@@ -741,7 +741,7 @@ public class BlockEntityChestCore extends BlockEntity implements MenuProvider, C
 
     private void loadUpgrades(ItemContainerContents contents) {
         loadingUpgrades = true;
-        upgrades.load(contents.allItemsCopyStream().toList());
+        upgrades.load(contents.itemCopies().toList());
         upgrades.resize(getMaterialProperties(getBlockState()).upgradeSlots());
         loadingUpgrades = false;
         updateCompression();

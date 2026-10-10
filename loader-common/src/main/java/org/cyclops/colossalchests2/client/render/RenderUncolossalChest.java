@@ -58,13 +58,16 @@ public class RenderUncolossalChest implements BlockEntityRenderer<BlockEntityUnc
     public void submit(State state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera) {
         poseStack.pushPose();
         poseStack.translate(0.5F, 0, 0.5F);
-        poseStack.mulPose(Axis.YP.rotationDegrees(-state.facing.toYRot()));
+        poseStack.rotateDegrees(Axis.YP, -state.facing.toYRot());
         poseStack.scale(SCALE, SCALE, SCALE);
         poseStack.translate(-0.5F, 0, -0.5F);
         SpriteId material = Sheets.chooseSprite(christmas ? ChestRenderState.ChestMaterialType.CHRISTMAS
                 : ChestRenderState.ChestMaterialType.REGULAR, ChestType.SINGLE);
-        collector.submitModel(model, state.openness, poseStack, material.renderType(RenderTypes::entityCutout), state.lightCoords,
-                OverlayTexture.NO_OVERLAY, -1, sprites.get(material), 0, state.breakProgress);
+        collector.submitModel(model, state.openness, poseStack, state.lightCoords, OverlayTexture.NO_OVERLAY, -1, material, sprites, 0);
+        if (state.breakProgress != null) {
+            collector.order(1).submitCrumblingOverlay(model, state.openness, poseStack, material.renderType(RenderTypes::entityCutout),
+                    state.lightCoords, OverlayTexture.NO_OVERLAY, -1, state.breakProgress);
+        }
         poseStack.popPose();
     }
 

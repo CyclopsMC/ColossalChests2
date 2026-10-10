@@ -3,6 +3,7 @@ package org.cyclops.colossalchests2.client.gui;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -41,7 +42,6 @@ import org.cyclops.cyclopscore.client.gui.image.Images;
 import org.cyclops.cyclopscore.helper.IModHelpers;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2ic;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 import java.util.Map;
@@ -673,7 +673,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
         double mouseX = event.x();
         double mouseY = event.y();
         int button = event.button();
-        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && searchField.visible && isOverSearchField(mouseX, mouseY)) {
+        if (button == InputConstants.MOUSE_BUTTON_RIGHT && searchField.visible && isOverSearchField(mouseX, mouseY)) {
             // Select all, so typing replaces the query.
             setFocused(searchField);
             searchField.setFocused(true);
@@ -685,8 +685,8 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
         if (slot < 0) {
             return super.mouseClicked(event, doubleClick);
         }
-        boolean left = button == GLFW.GLFW_MOUSE_BUTTON_LEFT;
-        boolean right = button == GLFW.GLFW_MOUSE_BUTTON_RIGHT;
+        boolean left = button == InputConstants.MOUSE_BUTTON_LEFT;
+        boolean right = button == InputConstants.MOUSE_BUTTON_RIGHT;
         if (left && event.hasAltDown() && hasLockUpgrade()) {
             sendClick(slot, ChestClickAction.TOGGLE_LOCK);
             return true;
@@ -746,7 +746,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
         Map<Integer, Long> added = Maps.newHashMap();
         Set<Integer> capped = Sets.newHashSet();
         int[] slots = draggedSlots.stream().mapToInt(Integer::intValue).toArray();
-        ItemStack remainder = ChestClickLogic.drag(slots, dragButton == GLFW.GLFW_MOUSE_BUTTON_RIGHT, cursor, (slot, amount) -> {
+        ItemStack remainder = ChestClickLogic.drag(slots, dragButton == InputConstants.MOUSE_BUTTON_RIGHT, cursor, (slot, amount) -> {
             long inserted = Math.min(amount, menu.getChestSlotSpace(slot, cursor));
             added.put(slot, inserted);
             if (inserted < amount) {
@@ -760,7 +760,7 @@ public class ContainerScreenChest extends AbstractContainerScreen<ContainerChest
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
         if (dragButton >= 0 && event.button() == dragButton) {
-            boolean oneEach = dragButton == GLFW.GLFW_MOUSE_BUTTON_RIGHT;
+            boolean oneEach = dragButton == InputConstants.MOUSE_BUTTON_RIGHT;
             if (draggedSlots.size() < 2) {
                 int slot = draggedSlots.isEmpty() ? dragStartSlot : draggedSlots.iterator().next();
                 if (oneEach && hasLockUpgrade() && menu.getChestSlot(slot).isEmpty()) {

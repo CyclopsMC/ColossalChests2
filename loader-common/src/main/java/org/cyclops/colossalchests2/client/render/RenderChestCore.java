@@ -1,11 +1,11 @@
 package org.cyclops.colossalchests2.client.render;
 
+import net.minecraft.util.LightCoordsUtil;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.model.object.chest.ChestModel;
-import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -14,7 +14,6 @@ import net.minecraft.client.renderer.blockentity.ChestRenderer;
 import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
 import net.minecraft.client.renderer.blockentity.state.ChestRenderState;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.sprite.SpriteGetter;
@@ -87,7 +86,7 @@ public class RenderChestCore implements BlockEntityRenderer<BlockEntityChestCore
         float openness = 1.0F - core.getOpenness(partialTick);
         state.openness = 1.0F - openness * openness * openness;
         state.lidRotation = -(state.openness * ((float) Math.PI / 2F));
-        state.bodyLight = LevelRenderer.getLightCoords(level, ChestShape.getFrontPos(structure, state.facing));
+        state.bodyLight = LightCoordsUtil.getLightCoords(level, ChestShape.getFrontPos(structure, state.facing));
         for (BlockPos pos : core.getDecoratedPositions()) {
             Block member = level.getBlockState(pos).getBlock();
             IChestOverlay chestOverlay = member instanceof BlockChestCore ? CoreMarkerOverlay.INSTANCE : ChestOverlays.get(member);
@@ -95,7 +94,7 @@ public class RenderChestCore implements BlockEntityRenderer<BlockEntityChestCore
                 continue;
             }
             for (Direction face : ChestShape.getOuterFaces(structure, pos)) {
-                state.overlays.add(new OverlayFace(pos, face, chestOverlay, LevelRenderer.getLightCoords(level, pos.relative(face))));
+                state.overlays.add(new OverlayFace(pos, face, chestOverlay, LightCoordsUtil.getLightCoords(level, pos.relative(face))));
             }
         }
     }
@@ -108,8 +107,7 @@ public class RenderChestCore implements BlockEntityRenderer<BlockEntityChestCore
         poseStack.pushPose();
         applyChestTransform(poseStack, state.blockPos, state.structure, state.facing);
         SpriteId material = getMaterial(state.material);
-        collector.submitModel(model, state.openness, poseStack, material.renderType(RenderTypes::entityCutout), state.bodyLight,
-                OverlayTexture.NO_OVERLAY, -1, sprites.get(material), 0, null);
+        collector.submitModel(model, state.openness, poseStack, state.bodyLight, OverlayTexture.NO_OVERLAY, -1, material, sprites, 0);
         poseStack.popPose();
 
         BlockPos origin = state.blockPos;
@@ -137,7 +135,7 @@ public class RenderChestCore implements BlockEntityRenderer<BlockEntityChestCore
                 structure.min().getX() - origin.getX() + structure.size() / 2F,
                 structure.min().getY() - origin.getY(),
                 structure.min().getZ() - origin.getZ() + structure.size() / 2F);
-        poseStack.mulPose(Axis.YP.rotationDegrees(-facing.toYRot()));
+        poseStack.rotateDegrees(Axis.YP, -facing.toYRot());
         poseStack.scale(scale, scale, scale);
         poseStack.translate(-0.5F, 0, -0.5F);
     }
@@ -149,12 +147,12 @@ public class RenderChestCore implements BlockEntityRenderer<BlockEntityChestCore
         float scale = structure.size() / MODEL_HEIGHT;
         applyChestTransform(poseStack, origin, structure, facing);
         poseStack.translate(0, LID_PIVOT_Y, LID_PIVOT_Z);
-        poseStack.mulPose(Axis.XP.rotation(lidRotation));
+        poseStack.rotate(Axis.XP, lidRotation);
         poseStack.translate(0, -LID_PIVOT_Y, -LID_PIVOT_Z);
         // Undo the chest transform.
         poseStack.translate(0.5F, 0, 0.5F);
         poseStack.scale(1 / scale, 1 / scale, 1 / scale);
-        poseStack.mulPose(Axis.YP.rotationDegrees(facing.toYRot()));
+        poseStack.rotateDegrees(Axis.YP, facing.toYRot());
         poseStack.translate(
                 -(structure.min().getX() - origin.getX() + structure.size() / 2F),
                 -(structure.min().getY() - origin.getY()),
@@ -167,10 +165,10 @@ public class RenderChestCore implements BlockEntityRenderer<BlockEntityChestCore
     public static void applyFaceTransform(PoseStack poseStack, Direction face, Direction facing) {
         poseStack.translate(0.5F, 0.5F, 0.5F);
         if (face.getAxis().isHorizontal()) {
-            poseStack.mulPose(Axis.YP.rotationDegrees(-face.toYRot()));
+            poseStack.rotateDegrees(Axis.YP, -face.toYRot());
         } else {
-            poseStack.mulPose(Axis.YP.rotationDegrees(-facing.toYRot()));
-            poseStack.mulPose(Axis.XP.rotationDegrees(face == Direction.UP ? -90 : 90));
+            poseStack.rotateDegrees(Axis.YP, -facing.toYRot());
+            poseStack.rotateDegrees(Axis.XP, face == Direction.UP ? -90 : 90);
         }
         poseStack.translate(-0.5F, -0.5F, 0.5F + OVERLAY_OFFSET);
     }

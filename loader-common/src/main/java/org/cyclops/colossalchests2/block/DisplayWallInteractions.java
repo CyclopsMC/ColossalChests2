@@ -1,5 +1,6 @@
 package org.cyclops.colossalchests2.block;
 
+import net.minecraft.util.Prediction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
@@ -122,7 +123,7 @@ public final class DisplayWallInteractions {
                 held.grow(stack.split(Math.max(0, held.getMaxStackSize() - held.getCount())).getCount());
             }
             if (!stack.isEmpty() && !inventory.add(stack)) {
-                player.drop(stack, false);
+                player.drop(stack, false, Prediction.SERVER_ONLY);
             }
             wall.updateDisplayStats(false);
         }

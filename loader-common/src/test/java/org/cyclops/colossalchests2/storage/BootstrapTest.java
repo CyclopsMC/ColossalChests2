@@ -22,7 +22,7 @@ public abstract class BootstrapTest {
         // Item components are normally bound when a world loads its registries.
         if (!componentsBound) {
             componentsBound = true;
-            BuiltInRegistries.DATA_COMPONENT_INITIALIZERS.build(VanillaRegistries.createLookup())
+            BuiltInRegistries.DATA_COMPONENT_INITIALIZERS.build(VanillaRegistries.createWorldLookup())
                     .forEach(DataComponentInitializers.PendingComponents::apply);
         }
     }

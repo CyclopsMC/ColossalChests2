@@ -1,5 +1,6 @@
 package org.cyclops.colossalchests2.material;
 
+import net.minecraft.util.Prediction;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.level.storage.TagValueInput;
 import com.google.common.collect.Lists;
@@ -138,7 +139,7 @@ public final class MaterialChanges {
      */
     private static void give(Player player, Item item, int count) {
         for (int remaining = count; remaining > 0; remaining -= item.getDefaultMaxStackSize()) {
-            player.getInventory().placeItemBackInInventory(new ItemStack(item, Math.min(remaining, item.getDefaultMaxStackSize())));
+            player.getInventory().placeItemBackInInventory(new ItemStack(item, Math.min(remaining, item.getDefaultMaxStackSize())), Prediction.SERVER_ONLY);
         }
     }
 

@@ -2,10 +2,10 @@ package org.cyclops.colossalchests2.advancement;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.advancements.criterion.ContextAwarePredicate;
-import net.minecraft.advancements.criterion.EntityPredicate;
-import net.minecraft.advancements.criterion.SimpleCriterionTrigger;
+import net.minecraft.advancements.triggers.SimpleCriterionTrigger;
+import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import org.cyclops.colossalchests2.api.ChestMaterial;
 
 import java.util.Optional;
@@ -17,7 +17,7 @@ import java.util.Optional;
 public class MaterialChangedTrigger extends SimpleCriterionTrigger<MaterialChangedTrigger.Instance> {
 
     public static final Codec<Instance> CODEC = RecordCodecBuilder.create(i -> i.group(
-            EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(Instance::player),
+            LootItemCondition.CODEC.optionalFieldOf("player").forGetter(Instance::player),
             ChestMaterial.CODEC.optionalFieldOf("from").forGetter(Instance::from),
             ChestMaterial.CODEC.optionalFieldOf("to").forGetter(Instance::to)
     ).apply(i, Instance::new));
@@ -36,7 +36,7 @@ public class MaterialChangedTrigger extends SimpleCriterionTrigger<MaterialChang
      * @param from The old material, any if empty.
      * @param to The new material, any if empty.
      */
-    public record Instance(Optional<ContextAwarePredicate> player, Optional<ChestMaterial> from,
+    public record Instance(Optional<Holder<LootItemCondition>> player, Optional<ChestMaterial> from,
                            Optional<ChestMaterial> to) implements SimpleCriterionTrigger.SimpleInstance {
         public boolean matches(ChestMaterial from, ChestMaterial to) {
             return this.from.map(m -> m.equals(from)).orElse(true) && this.to.map(m -> m.equals(to)).orElse(true);
