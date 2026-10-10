@@ -532,6 +532,8 @@ public class GameTestsCommon {
 
     private static ServerPlayer makeViewer(GameTestHelper helper) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        // Mods may hand out items on login, such as manuals, while clicks expect an empty hand.
+        player.getInventory().clearContent();
         BlockPos near = helper.absolutePos(MIN_A.offset(1, 0, -2));
         player.snapTo(near.getX() + 0.5, near.getY(), near.getZ() + 0.5);
         return player;
