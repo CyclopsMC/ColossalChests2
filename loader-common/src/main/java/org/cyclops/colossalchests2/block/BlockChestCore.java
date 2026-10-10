@@ -3,12 +3,12 @@ package org.cyclops.colossalchests2.block;
 import java.util.function.Consumer;
 import net.minecraft.world.level.redstone.Orientation;
 import com.google.common.collect.Lists;
-import com.mojang.serialization.MapCodec;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -52,12 +52,10 @@ public class BlockChestCore extends BaseEntityBlock implements ITooltipBlock {
     private static final List<BlockChestCore> INSTANCES = Lists.newArrayList();
 
     private final ChestMaterial material;
-    private final MapCodec<BlockChestCore> codec;
 
     public BlockChestCore(Properties properties, ChestMaterial material) {
         super(properties);
         this.material = material;
-        this.codec = simpleCodec(props -> new BlockChestCore(props, material));
         this.registerDefaultState(this.stateDefinition.any().setValue(FORMED, false));
         INSTANCES.add(this);
     }
@@ -80,11 +78,6 @@ public class BlockChestCore extends BaseEntityBlock implements ITooltipBlock {
 
     public ChestMaterial getMaterial() {
         return material;
-    }
-
-    @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
-        return codec;
     }
 
     @Override
@@ -160,17 +153,15 @@ public class BlockChestCore extends BaseEntityBlock implements ITooltipBlock {
     }
 
     @Override
-    public void playerDestroy(Level level, Player player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack tool) {
+    public void playerDestroy(ServerLevel level, ServerPlayer player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack tool) {
         // Like the default, but drops pop out on the player's side, so they cannot fall into the chest interior.
         player.awardStat(Stats.BLOCK_MINED.get(this));
         player.causeFoodExhaustion(0.005F);
-        if (level instanceof ServerLevel serverLevel) {
-            Direction face = getFaceTowards(pos, player);
-            for (ItemStack drop : getDrops(state, serverLevel, pos, blockEntity, player, tool)) {
-                popResourceFromFace(level, pos, face, drop);
-            }
-            state.spawnAfterBreak(serverLevel, pos, tool, true);
+        Direction face = getFaceTowards(pos, player);
+        for (ItemStack drop : getDrops(state, level, pos, blockEntity, player, tool)) {
+            popResourceFromFace(level, pos, face, drop);
         }
+        state.spawnAfterBreak(level, pos, tool, true);
     }
 
     /**

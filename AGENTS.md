@@ -188,6 +188,7 @@ See `.github/workflows/ci.yml` for the full CI configuration.
 - **CONTRIBUTING.md**: Contribution guidelines and issue reporting
 - **Build configuration**: `build.gradle` and loader-specific build files
 - **Project properties**: `gradle.properties` (Minecraft version, mod version, etc.)
+- **CHANGELOG-*.md**: These are automatically generated files upon releases. Do not modify these manually unless a release is being made.
 
 ## Key Principles
 
@@ -208,9 +209,29 @@ Changes may also include fixing merge conflicts.
 
 IMPORTANT: Some changes may be non-trivial,
 for which you can find detail background information for each seperate Minecraft update within these primers: https://github.com/neoforged/.github/tree/main/primers
+You can use these primers to learn how certain classes or systems were changed across Minecraft versions.
+Since primers can be quite large, download them first, and then use grep on the downloaded file to find information related to a relevant class or system.
 The blogs of https://neoforged.net/ and https://fabricmc.net/blog/ may also contain useful porting help.
 
 After making all necessary changes, make sure the code fully compiles and the (game) tests pass.
+
+## Carrying out Minecraft updates
+
+When I ask you to update to a new Minecraft version,
+please open a pull request to update to that new Minecraft version.
+In a multiloader repo, you will have to update the three mod loaders.
+Expect some tooling changes as well.
+It might be that there are still some bugs in some mod loaders if the Minecraft release is just out.
+The update primer for the target Minecraft version might also be helpful (https://github.com/neoforged/.github/tree/main/primers).
+Also use clientdevbridge to validate things that are relevant to the update.
+Also check if there are any TODO’s marked for nextmajor we can process and carry them out (since this is a new Minecraft version for which no releases exist yet, this is the time for breaking changes), but if you are uncertain about any changes, ask me.
+When done with updating all Cyclops mods to the new Minecraft version, add this new MC version to https://github.com/CyclopsMC/packtests/ and https://github.com/CyclopsMC/.github/tree/master.
+
+## Finding code in dependencies
+
+When searching for dependencies in `~/.gradle`, take into account that this directory may be very large,
+so make sure that lookups are as selective as possible (name, version, ...) to avoid slow lookups.
+When possible, lookup the relevant jar first, and only then look for specific classes within that jar.
 
 ## Visual testing
 
