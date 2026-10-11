@@ -17,7 +17,7 @@ import static org.junit.Assert.assertEquals;
 public class TestRenderChestCoreTransforms {
 
     private static final float EPSILON = 0.0001F;
-    private static final float OUT = RenderChestCore.OVERLAY_OFFSET;
+    private static final float OUT = 0.01F;
     private static final ChestStructure STRUCTURE = new ChestStructure(BlockPos.ZERO, 3);
 
     private static Vector3f transform(PoseStack poseStack, float x, float y, float z) {
@@ -32,7 +32,7 @@ public class TestRenderChestCoreTransforms {
 
     private static PoseStack face(Direction face, Direction facing) {
         PoseStack poseStack = new PoseStack();
-        RenderChestCore.applyFaceTransform(poseStack, face, facing);
+        RenderChestCore.applyFaceTransform(poseStack, face, facing, OUT);
         return poseStack;
     }
 
@@ -76,6 +76,12 @@ public class TestRenderChestCoreTransforms {
         PoseStack poseStack = face(Direction.DOWN, Direction.SOUTH);
         assertPoint(0, -OUT, 0, transform(poseStack, 0, 0, 0));
         assertPoint(0, -OUT, 1, transform(poseStack, 0, 1, 0));
+    }
+
+    @Test
+    public void testOverlayOffsetGrowsWithDistance() {
+        assertEquals(RenderChestCore.OVERLAY_OFFSET_MIN, RenderChestCore.getOverlayOffset(0), 0);
+        assertEquals(64 * RenderChestCore.OVERLAY_OFFSET_PER_DISTANCE, RenderChestCore.getOverlayOffset(64), EPSILON);
     }
 
     @Test
