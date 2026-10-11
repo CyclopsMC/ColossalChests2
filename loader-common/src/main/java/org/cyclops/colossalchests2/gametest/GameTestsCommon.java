@@ -1861,11 +1861,7 @@ public class GameTestsCommon {
                     helper.assertTrue(player.getInventory().getItem(4).is(Items.DIRT), "Expected the held dirt to stay");
                     helper.assertValueEqual(countInInventory(player, Items.STONE), 1, "stone next to the held dirt");
                     player.getInventory().selected = 0;
-                    // Sneaking with an empty hand does nothing.
-                    player.getInventory().clearContent();
-                    player.setShiftKeyDown(true);
-                    helper.assertValueEqual(click(helper, player, display), InteractionResult.PASS, "sneaking click");
-                    helper.assertTrue(wall.getDisplayed(Direction.UP).is(Items.STONE), "Expected stone to stay shown");
+                    // Sneaking with an empty hand opens the settings. Checked in-game, as NeoForge does not open menus for mock players.
                 })
                 .thenSucceed();
     }
