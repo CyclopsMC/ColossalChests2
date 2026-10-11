@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    "#colossalchests2:chest_walls",
+    "#minecraft:copper_chests"
+  ],
+  "result": {
+    "id": "colossalchests2:chest_wall_golem",
+    "count": 1
+  }
+}
