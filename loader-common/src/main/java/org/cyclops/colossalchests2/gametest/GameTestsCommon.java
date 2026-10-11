@@ -144,6 +144,7 @@ import org.cyclops.cyclopscore.network.PacketBase;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -1889,11 +1890,7 @@ public class GameTestsCommon {
                     helper.assertTrue(player.getInventory().getItem(4).is(Items.DIRT), "Expected the held dirt to stay");
                     helper.assertValueEqual(countInInventory(player, Items.STONE), 1, "stone next to the held dirt");
                     player.getInventory().setSelectedSlot(0);
-                    // Sneaking with an empty hand does nothing.
-                    player.getInventory().clearContent();
-                    player.setShiftKeyDown(true);
-                    helper.assertValueEqual(click(helper, player, display), InteractionResult.PASS, "sneaking click");
-                    helper.assertTrue(wall.getDisplayed(Direction.UP).is(Items.STONE), "Expected stone to stay shown");
+                    // Sneaking with an empty hand opens the settings. Checked in-game, as NeoForge does not open menus for mock players.
                 })
                 .thenSucceed();
     }
@@ -1958,6 +1955,32 @@ public class GameTestsCommon {
                     helper.assertTrue(wall.getDisplayed(Direction.UP).is(Items.STONE), "Expected stone to be shown");
                     helper.assertValueEqual(countInInventory(player, Items.STONE), 20, "stone kept after shift-click");
                     helper.assertValueEqual(wall.getDisplayStats(Direction.UP).count(), 5L, "shown count");
+                })
+                .thenSucceed();
+    }
+
+    @GameTest(template = TEMPLATE_EMPTY)
+    public void testDisplayOpenDataReadWhenOpening(GameTestHelper helper) {
+        BlockPos corePos = buildChest(helper, MIN_A, 3, ChestMaterial.WOOD);
+        BlockPos display = placeWall(helper, MIN_A.offset(1, 2, 1), WallType.DISPLAY);
+        List<Consumer<FriendlyByteBuf>> writers = Lists.newArrayList();
+        int[] faces = new int[1];
+        helper.startSequence()
+                .thenWaitUntil(() -> assertFormed(helper, corePos, MIN_A, 3))
+                .thenExecute(() -> {
+                    // Fabric writes open data later, off the server thread, so it must not depend on the chest by then.
+                    BlockEntityChestWall wall = getWall(helper, display);
+                    faces[0] = wall.getDisplayFaces().size();
+                    helper.assertTrue(faces[0] > 0, "Expected faces to show items on");
+                    writers.add(ContainerDisplay.openDataWriter(wall));
+                    helper.setBlock(MIN_A, Blocks.AIR);
+                })
+                .thenWaitUntil(() -> assertDormant(helper, corePos))
+                .thenExecute(() -> {
+                    FriendlyByteBuf data = new FriendlyByteBuf(Unpooled.buffer());
+                    writers.getFirst().accept(data);
+                    ContainerDisplay client = new ContainerDisplay(103, makeViewer(helper).getInventory(), data);
+                    helper.assertValueEqual(client.getFaces().size(), faces[0], "faces on the client");
                 })
                 .thenSucceed();
     }

@@ -1,6 +1,7 @@
 package org.cyclops.colossalchests2.inventory;
 
 import com.google.common.collect.Lists;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.Container;
@@ -14,6 +15,7 @@ import org.cyclops.colossalchests2.blockentity.BlockEntityChestWall;
 import org.cyclops.colossalchests2.blockentity.DisplayOption;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Consumer;
 import java.util.List;
 import java.util.Locale;
 
@@ -85,11 +87,23 @@ public class ContainerDisplay extends ContainerGhostSettings {
      * Write what the client constructor reads.
      */
     public static void writeOpenData(FriendlyByteBuf data, BlockEntityChestWall wall) {
-        data.writeBlockPos(wall.getBlockPos());
-        data.writeEnum(getFront(wall));
-        List<Direction> faces = wall.getDisplayFaces();
-        data.writeVarInt(faces.size());
-        faces.forEach(data::writeEnum);
+        openDataWriter(wall).accept(data);
+    }
+
+    /**
+     * Some loaders write open data later, off the server thread, so read the wall now.
+     * @return A writer of what the client constructor reads.
+     */
+    public static Consumer<FriendlyByteBuf> openDataWriter(BlockEntityChestWall wall) {
+        BlockPos pos = wall.getBlockPos();
+        Direction front = getFront(wall);
+        List<Direction> faces = List.copyOf(wall.getDisplayFaces());
+        return data -> {
+            data.writeBlockPos(pos);
+            data.writeEnum(front);
+            data.writeVarInt(faces.size());
+            faces.forEach(data::writeEnum);
+        };
     }
 
     private static Direction readFront(FriendlyByteBuf data) {

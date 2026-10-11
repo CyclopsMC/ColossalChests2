@@ -159,23 +159,19 @@ public final class DisplayWallInteractions {
 
     /**
      * A right-click with an empty hand on a face: right after an insert there it inserts all of the type it shows,
-     * otherwise it opens the settings. Sneaking does nothing, except on a hidden face, where it is the only way to the
-     * settings.
+     * otherwise it opens the settings. Sneaking opens the settings on any face, like on other functional walls.
      * @return The result, or null to fall back to the default wall behaviour.
      */
     @Nullable
     public static InteractionResult useWithoutItem(Player player, BlockEntityChestWall wall, Direction face) {
-        if (wall.isFaceHidden(face)) {
-            if (!player.isSecondaryUseActive()) {
-                return null;
-            }
+        if (player.isSecondaryUseActive()) {
             if (player instanceof ServerPlayer serverPlayer) {
                 openSettings(serverPlayer, wall);
             }
             return InteractionResult.SUCCESS;
         }
-        if (player.isSecondaryUseActive()) {
-            return InteractionResult.PASS;
+        if (wall.isFaceHidden(face)) {
+            return null;
         }
         // Only the server knows about the previous click, the client lets it decide.
         if (player instanceof ServerPlayer serverPlayer) {
@@ -191,7 +187,7 @@ public final class DisplayWallInteractions {
     }
 
     private static void openSettings(ServerPlayer player, BlockEntityChestWall wall) {
-        IModHelpers.get().getMinecraftHelpers().openMenu(player, wall, buf -> ContainerDisplay.writeOpenData(buf, wall));
+        IModHelpers.get().getMinecraftHelpers().openMenu(player, wall, ContainerDisplay.openDataWriter(wall));
     }
 
     /**
