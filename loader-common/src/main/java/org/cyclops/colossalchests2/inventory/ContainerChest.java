@@ -33,6 +33,7 @@ import org.cyclops.colossalchests2.upgrade.ItemChestUpgrade;
 import org.cyclops.colossalchests2.upgrade.UpgradeSet;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Consumer;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
@@ -124,11 +125,26 @@ public class ContainerChest extends AbstractContainerMenu {
      * Write what the client-side constructor reads.
      */
     public static void writeOpenData(FriendlyByteBuf data, BlockEntityChestCore core) {
-        data.writeBlockPos(core.getBlockPos());
-        data.writeVarInt(core.getStorage().getSlotCount());
-        data.writeVarInt(core.getUpgrades().getContainerSize());
-        data.writeVarIntArray(getMaxUpgradeCounts(core));
-        data.writeVarIntArray(getBetterMaterialTakesMore(core));
+        openDataWriter(core).accept(data);
+    }
+
+    /**
+     * Some loaders write open data later, off the server thread, so read the chest now.
+     * @return A writer of what the client-side constructor reads.
+     */
+    public static Consumer<FriendlyByteBuf> openDataWriter(BlockEntityChestCore core) {
+        BlockPos pos = core.getBlockPos();
+        int slotCount = core.getStorage().getSlotCount();
+        int upgradeSlots = core.getUpgrades().getContainerSize();
+        int[] maxUpgradeCounts = getMaxUpgradeCounts(core);
+        int[] betterMaterialTakesMore = getBetterMaterialTakesMore(core);
+        return data -> {
+            data.writeBlockPos(pos);
+            data.writeVarInt(slotCount);
+            data.writeVarInt(upgradeSlots);
+            data.writeVarIntArray(maxUpgradeCounts);
+            data.writeVarIntArray(betterMaterialTakesMore);
+        };
     }
 
     private static int[] getMaxUpgradeCounts(BlockEntityChestCore core) {
