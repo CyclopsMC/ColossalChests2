@@ -191,7 +191,7 @@ public final class DisplayWallInteractions {
     }
 
     private static void openSettings(ServerPlayer player, BlockEntityChestWall wall) {
-        IModHelpers.get().getMinecraftHelpers().openMenu(player, wall, buf -> ContainerDisplay.writeOpenData(buf, wall));
+        IModHelpers.get().getMinecraftHelpers().openMenu(player, wall, ContainerDisplay.openDataWriter(wall));
     }
 
     /**

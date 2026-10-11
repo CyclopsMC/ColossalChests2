@@ -319,7 +319,7 @@ public class BlockEntityChestCore extends BlockEntity implements MenuProvider, C
      */
     public void openMenu(ServerPlayer player) {
         if (isFormed()) {
-            IModHelpers.get().getMinecraftHelpers().openMenu(player, this, data -> ContainerChest.writeOpenData(data, this));
+            IModHelpers.get().getMinecraftHelpers().openMenu(player, this, ContainerChest.openDataWriter(this));
         }
     }
 
