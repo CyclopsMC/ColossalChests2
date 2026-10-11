@@ -54,7 +54,6 @@ public class DisplayWallOverlay implements IChestOverlay {
     private static final float ITEM_Y = 9.25F / 16F;
     private static final float ITEM_SIZE = 7.5F / 16F;
     private static final float INDICATOR_SIZE = 2.5F / 16F;
-    private static final float LAYER = 0.0005F;
 
     @Override
     public void render(IChest chest, BlockPos pos, Direction face, float partialTick,
@@ -71,20 +70,22 @@ public class DisplayWallOverlay implements IChestOverlay {
             }
             return;
         }
+        // Like the overlay offset, so layers do not z-fight far away.
+        float layer = RenderChestCore.getOverlayOffset(pos) / 2;
         poseStack.pushPose();
-        renderPanel(chest, poseStack, collector, light, overlay);
+        renderPanel(chest, layer, poseStack, collector, light, overlay);
         ItemStack displayed = wall.getDisplayed(face);
         if (!displayed.isEmpty()) {
             DisplayStats stats = wall.getDisplayStats(face);
-            poseStack.translate(0, 0, LAYER);
+            poseStack.translate(0, 0, layer);
             renderDisplayedItem(poseStack, collector, level, displayed, light);
-            poseStack.translate(0, 0, LAYER);
+            poseStack.translate(0, 0, layer);
             if (wall.isEnabled(face, DisplayOption.COUNT)) {
                 String count = IModHelpers.get().getGuiHelpers().quantityToScaledString(stats.count());
                 ChestOverlayHelpers.renderText(poseStack, collector, count, 0.5F, TEXT_Y0, TEXT_HEIGHT, COLOR_TEXT, light);
             }
             if (wall.isEnabled(face, DisplayOption.FILL_LEVEL)) {
-                renderFillBar(ChestOverlayHelpers.getBlockSprite(BAR_TEXTURE), stats.getFillLevel(), poseStack, collector, light, overlay);
+                renderFillBar(ChestOverlayHelpers.getBlockSprite(BAR_TEXTURE), stats.getFillLevel(), layer, poseStack, collector, light, overlay);
             }
             if (wall.isEnabled(face, DisplayOption.UPGRADE_INDICATORS)) {
                 renderIndicators(stats, poseStack, collector, light, overlay);
@@ -93,7 +94,7 @@ public class DisplayWallOverlay implements IChestOverlay {
         poseStack.popPose();
     }
 
-    private void renderPanel(IChest chest, PoseStack poseStack, SubmitNodeCollector collector,
+    private void renderPanel(IChest chest, float layer, PoseStack poseStack, SubmitNodeCollector collector,
                              int light, int overlay) {
         // A frame of the chest's material, so the panel looks built into it.
         ChestMaterial material = chest.getChestMaterial();
@@ -101,8 +102,7 @@ public class DisplayWallOverlay implements IChestOverlay {
             Identifier frame = material.id().withPrefix("block/chest_wall_");
             TextureAtlasSprite frameSprite = ChestOverlayHelpers.getBlockSprite(frame);
             ChestOverlayHelpers.renderSprite(poseStack, collector, frameSprite, 0, 0, 1, 1, light, overlay);
-            ChestOverlayHelpers.renderSides(poseStack, collector, frameSprite, RenderChestCore.OVERLAY_OFFSET, light, overlay);
-            poseStack.translate(0, 0, LAYER);
+            poseStack.translate(0, 0, layer);
         }
         // The panel texture has a transparent rim, so the frame shows around it.
         ChestOverlayHelpers.renderSprite(poseStack, collector, ChestOverlayHelpers.getBlockSprite(PANEL_TEXTURE), 0, 0, 1, 1, light, overlay);
@@ -125,11 +125,11 @@ public class DisplayWallOverlay implements IChestOverlay {
         poseStack.popPose();
     }
 
-    private void renderFillBar(TextureAtlasSprite bar, float fill, PoseStack poseStack, SubmitNodeCollector collector, int light, int overlay) {
+    private void renderFillBar(TextureAtlasSprite bar, float fill, float layer, PoseStack poseStack, SubmitNodeCollector collector, int light, int overlay) {
         ChestOverlayHelpers.renderSprite(poseStack, collector, bar, BAR_X0, BAR_Y0, BAR_X1, BAR_Y1, light, overlay, COLOR_BAR_BACKGROUND);
         if (fill > 0) {
             poseStack.pushPose();
-            poseStack.translate(0, 0, LAYER);
+            poseStack.translate(0, 0, layer);
             ChestOverlayHelpers.renderSprite(poseStack, collector, bar, BAR_X0, BAR_Y0, BAR_X0 + (BAR_X1 - BAR_X0) * fill, BAR_Y1,
                     light, overlay, fill >= 1 ? COLOR_BAR_FULL : COLOR_BAR);
             poseStack.popPose();

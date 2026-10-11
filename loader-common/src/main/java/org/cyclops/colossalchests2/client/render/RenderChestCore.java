@@ -3,6 +3,7 @@ package org.cyclops.colossalchests2.client.render;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.model.object.chest.ChestModel;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -44,10 +45,13 @@ import java.util.List;
 public class RenderChestCore implements BlockEntityRenderer<BlockEntityChestCore, RenderChestCore.State> {
 
     /**
-     * How far overlays float in front of the chest surface, far enough to avoid z-fighting.
+     * How far overlays float in front of the chest surface, per block of camera distance.
+     * Like vanilla's view offset layering, this keeps them flush up close while avoiding z-fighting far away,
+     * where depth precision drops.
      * The lock sticks out further, so it hides the part of an overlay right behind it, like any object in front.
      */
-    public static final float OVERLAY_OFFSET = 1F / 32F;
+    public static final float OVERLAY_OFFSET_PER_DISTANCE = 1F / 2048F;
+    public static final float OVERLAY_OFFSET_MIN = 1F / 1024F;
 
     private static final float MODEL_HEIGHT = 14F / 16F;
     private static final float LID_PIVOT_Y = 9F / 16F;
@@ -120,7 +124,7 @@ public class RenderChestCore implements BlockEntityRenderer<BlockEntityChestCore
                 applyLidTransform(poseStack, origin, state.structure, state.facing, state.lidRotation);
             }
             poseStack.translate(pos.getX() - origin.getX(), pos.getY() - origin.getY(), pos.getZ() - origin.getZ());
-            applyFaceTransform(poseStack, overlayFace.face(), state.facing);
+            applyFaceTransform(poseStack, overlayFace.face(), state.facing, getOverlayOffset(pos));
             overlayFace.overlay().render(state.core, pos, overlayFace.face(), state.partialTick, poseStack, collector,
                     overlayFace.light(), OverlayTexture.NO_OVERLAY);
             poseStack.popPose();
@@ -162,9 +166,25 @@ public class RenderChestCore implements BlockEntityRenderer<BlockEntityChestCore
     }
 
     /**
-     * Map a block's unit cube onto the face-local unit square of {@link IChestOverlay}.
+     * @param pos A member position.
+     * @return How far overlays on it float in front of the chest surface.
      */
-    public static void applyFaceTransform(PoseStack poseStack, Direction face, Direction facing) {
+    public static float getOverlayOffset(BlockPos pos) {
+        return getOverlayOffset(Vec3.atCenterOf(pos).distanceTo(Minecraft.getInstance().gameRenderer.getMainCamera().position()));
+    }
+
+    /**
+     * @param distance The camera distance.
+     * @return How far overlays float in front of the chest surface.
+     */
+    public static float getOverlayOffset(double distance) {
+        return Math.max(OVERLAY_OFFSET_MIN, (float) distance * OVERLAY_OFFSET_PER_DISTANCE);
+    }
+
+    /**
+     * Map a block's unit cube onto the face-local unit square of {@link IChestOverlay}, offset in front of it.
+     */
+    public static void applyFaceTransform(PoseStack poseStack, Direction face, Direction facing, float offset) {
         poseStack.translate(0.5F, 0.5F, 0.5F);
         if (face.getAxis().isHorizontal()) {
             poseStack.mulPose(Axis.YP.rotationDegrees(-face.toYRot()));
@@ -172,7 +192,7 @@ public class RenderChestCore implements BlockEntityRenderer<BlockEntityChestCore
             poseStack.mulPose(Axis.YP.rotationDegrees(-facing.toYRot()));
             poseStack.mulPose(Axis.XP.rotationDegrees(face == Direction.UP ? -90 : 90));
         }
-        poseStack.translate(-0.5F, -0.5F, 0.5F + OVERLAY_OFFSET);
+        poseStack.translate(-0.5F, -0.5F, 0.5F + offset);
     }
 
     protected SpriteId getMaterial(ChestMaterial material) {
