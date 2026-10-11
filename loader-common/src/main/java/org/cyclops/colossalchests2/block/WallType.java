@@ -27,7 +27,11 @@ public enum WallType {
     /**
      * Pulls dropped items around it into the chest.
      */
-    MAGNET;
+    MAGNET,
+    /**
+     * Copper golems take items out of the chest here, like from a copper chest.
+     */
+    GOLEM;
 
     public static final WallType[] VALUES = values();
 

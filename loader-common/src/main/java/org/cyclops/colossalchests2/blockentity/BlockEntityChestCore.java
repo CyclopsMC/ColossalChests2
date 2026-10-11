@@ -20,6 +20,7 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.ContainerUser;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -93,6 +94,7 @@ public class BlockEntityChestCore extends BlockEntity implements MenuProvider, C
     private final ChestStorage storage;
     private final ItemHandlerLogic itemHandlerLogic;
     private final Set<ServerPlayer> viewers = Sets.newHashSet();
+    private final List<ContainerUser> openers = Lists.newArrayList();
     private final ChestLid lid = new ChestLid();
 
     @Nullable
@@ -388,21 +390,46 @@ public class BlockEntityChestCore extends BlockEntity implements MenuProvider, C
     public void addViewer(ServerPlayer player) {
         if (viewers.add(player)) {
             storage.markAllDirty();
-            onViewersChanged(viewers.size() == 1 ? Boolean.TRUE : null);
+            onViewersChanged(getOpenCount() == 1 ? Boolean.TRUE : null);
         }
     }
 
     public void removeViewer(ServerPlayer player) {
         if (viewers.remove(player)) {
-            onViewersChanged(viewers.isEmpty() ? Boolean.FALSE : null);
+            onViewersChanged(getOpenCount() == 0 ? Boolean.FALSE : null);
         }
+    }
+
+    /**
+     * Open the lid for a user without a menu, such as a copper golem.
+     * @param user The user.
+     */
+    public void addOpener(ContainerUser user) {
+        if (!openers.contains(user)) {
+            openers.add(user);
+            onViewersChanged(getOpenCount() == 1 ? Boolean.TRUE : null);
+        }
+    }
+
+    public void removeOpener(ContainerUser user) {
+        if (openers.remove(user)) {
+            onViewersChanged(getOpenCount() == 0 ? Boolean.FALSE : null);
+        }
+    }
+
+    public List<ContainerUser> getOpeners() {
+        return Collections.unmodifiableList(openers);
+    }
+
+    private int getOpenCount() {
+        return viewers.size() + openers.size();
     }
 
     /**
      * @param open If the chest was opened or closed, or null if neither.
      */
     private void onViewersChanged(@Nullable Boolean open) {
-        level.blockEvent(worldPosition, getBlockState().getBlock(), EVENT_VIEWERS, viewers.size());
+        level.blockEvent(worldPosition, getBlockState().getBlock(), EVENT_VIEWERS, getOpenCount());
         if (open != null && structure != null) {
             ChestSounds.play(level, getCenter(structure), structure.size(), open);
         }
@@ -451,6 +478,12 @@ public class BlockEntityChestCore extends BlockEntity implements MenuProvider, C
         }
         if (isFormed()) {
             hookedUpgrades.counts().forEach((upgrade, count) -> upgrade.tick(this, count));
+        }
+        for (ContainerUser opener : List.copyOf(openers)) {
+            // An opener that died or unloaded mid-interaction would otherwise keep the lid open.
+            if (opener.getLivingEntity().isRemoved()) {
+                removeOpener(opener);
+            }
         }
         if (!viewers.isEmpty() && storage.hasDirtySlots()) {
             onDirtySlots(storage.drainDirtySlots());

@@ -23,6 +23,9 @@
     ]
   },
   "accessWidener" : "colossalchests2.accesswidener",
+  "mixins": [
+    "mixins.colossalchests2.json"
+  ],
 
   "depends": {
     "cyclopscore": ">=${cyclopscore_version}",
