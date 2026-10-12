@@ -126,6 +126,7 @@ import org.cyclops.colossalchests2.upgrade.ItemChestUpgrade;
 import org.cyclops.cyclopscore.network.PacketBase;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.Objects;
@@ -230,12 +231,24 @@ public class GameTestsCommon {
     private static ItemStack breakCoreAndPickUp(GameTestHelper helper, BlockPos corePos) {
         // Unlike GameTestHelper#destroyBlock, this runs the loot table like a player breaking the block.
         BlockPos absolute = helper.absolutePos(corePos);
-        helper.getLevel().destroyBlock(absolute, true);
-        List<ItemEntity> items = helper.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(absolute).inflate(2));
+        List<ItemEntity> items = itemEntitiesSpawnedBy(helper, absolute, 2, () -> helper.getLevel().destroyBlock(absolute, true));
         helper.assertValueEqual(items.size(), 1, "dropped item entities");
         ItemStack stack = items.get(0).getItem().copy();
         items.get(0).discard();
         return stack;
+    }
+
+    /**
+     * Run an action and return the item entities it spawned around a position.
+     * Leftover drops of earlier tests just outside the test bounds are not cleared, so these are ignored.
+     */
+    private static List<ItemEntity> itemEntitiesSpawnedBy(GameTestHelper helper, BlockPos absolute, double radius, Runnable action) {
+        AABB area = new AABB(absolute).inflate(radius);
+        List<ItemEntity> before = helper.getLevel().getEntitiesOfClass(ItemEntity.class, area);
+        action.run();
+        List<ItemEntity> items = new ArrayList<>(helper.getLevel().getEntitiesOfClass(ItemEntity.class, area));
+        items.removeAll(before);
+        return items;
     }
 
     private static void placeCore(GameTestHelper helper, ItemStack stack, BlockPos corePos) {
@@ -1382,9 +1395,10 @@ public class GameTestsCommon {
                 .thenWaitUntil(() -> assertFormed(helper, corePos, MIN_A, 3))
                 .thenExecute(() -> {
                     ServerPlayer player = makePlayerNorthOf(helper, corePos);
-                    player.gameMode.destroyBlock(helper.absolutePos(corePos));
+                    BlockPos absolute = helper.absolutePos(corePos);
+                    List<ItemEntity> items = itemEntitiesSpawnedBy(helper, absolute, 3, () -> player.gameMode.destroyBlock(absolute));
                     helper.assertBlockNotPresent(core(ChestMaterial.WOOD), corePos);
-                    helper.assertItemEntityNotPresent(core(ChestMaterial.WOOD).asItem(), corePos, 3);
+                    helper.assertTrue(items.isEmpty(), "Expected no drops, got " + items);
                 })
                 .thenSucceed();
     }
@@ -1418,8 +1432,8 @@ public class GameTestsCommon {
             player.gameMode.changeGameModeForPlayer(GameType.SURVIVAL);
         }
         BlockPos absolute = helper.absolutePos(corePos);
-        helper.assertTrue(player.gameMode.destroyBlock(absolute), "Expected the player to break the core");
-        List<ItemEntity> items = helper.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(absolute).inflate(2));
+        List<ItemEntity> items = itemEntitiesSpawnedBy(helper, absolute, 2,
+                () -> helper.assertTrue(player.gameMode.destroyBlock(absolute), "Expected the player to break the core"));
         helper.assertValueEqual(items.size(), 1, "dropped item entities");
         // The core is on the north face, so its drop must not land inside the chest.
         helper.assertTrue(items.get(0).getZ() < absolute.getZ(), "Expected the drop on the player's side");
@@ -2851,11 +2865,11 @@ public class GameTestsCommon {
         helper.assertBlockNotPresent(wall(ChestMaterial.IRON), MIN_A.offset(4, 4, 4));
 
         // Replacing overwrites them without dropping anything.
-        assertMessage(helper, runCommand(helper, source, 0, Commands.LEVEL_GAMEMASTERS, "colossalchests2 build iron 5" + at + " replace"),
-                "command.colossalchests2.build.success");
+        List<ItemEntity> drops = itemEntitiesSpawnedBy(helper, min, 8, () -> assertMessage(helper,
+                runCommand(helper, source, 0, Commands.LEVEL_GAMEMASTERS, "colossalchests2 build iron 5" + at + " replace"),
+                "command.colossalchests2.build.success"));
         assertFormed(helper, MIN_A.offset(2, 2, 0), MIN_A, 5);
         helper.assertBlockPresent(Blocks.AIR, MIN_A.offset(2, 2, 2));
-        List<ItemEntity> drops = helper.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(min).inflate(8));
         helper.assertTrue(drops.isEmpty(), "Expected no drops, got " + drops);
         helper.succeed();
     }
