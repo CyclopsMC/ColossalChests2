@@ -13,10 +13,8 @@ org.cyclops.colossalchests2.command
 org.cyclops.colossalchests2.component
 org.cyclops.colossalchests2.config
 org.cyclops.colossalchests2.gametest
-org.cyclops.colossalchests2.golem
 org.cyclops.colossalchests2.inventory
 org.cyclops.colossalchests2.material
-org.cyclops.colossalchests2.mixin
 org.cyclops.colossalchests2.modcompat
 org.cyclops.colossalchests2.multiblock
 org.cyclops.colossalchests2.network
